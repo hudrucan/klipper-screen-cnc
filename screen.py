@@ -312,23 +312,17 @@ class KlipperScreen(Gtk.Window):
     def ws_subscribe(self):
         requested_updates = {
             "objects": {
-                "bed_mesh": ["profile_name", "mesh_max", "mesh_min", "probed_matrix", "profiles"],
                 "configfile": ["config", "warnings"],
                 "display_status": ["progress", "message"],
                 "fan": ["speed"],
                 "gcode_move": [
-                    "extrude_factor",
                     "gcode_position",
                     "homing_origin",
                     "speed_factor",
                     "speed",
                 ],
                 "idle_timeout": ["state"],
-                "pause_resume": ["is_paused"],
                 "print_stats": [
-                    "print_duration",
-                    "total_duration",
-                    "filament_used",
                     "filename",
                     "state",
                     "message",
@@ -336,10 +330,7 @@ class KlipperScreen(Gtk.Window):
                 ],
                 "toolhead": [
                     "homed_axes",
-                    "estimated_print_time",
-                    "print_time",
                     "position",
-                    "extruder",
                     "max_accel",
                     "minimum_cruise_ratio",
                     "max_velocity",
@@ -347,26 +338,9 @@ class KlipperScreen(Gtk.Window):
                 ],
                 "virtual_sdcard": ["file_position", "is_active", "progress"],
                 "webhooks": ["state", "state_message"],
-                "firmware_retraction": [
-                    "retract_length",
-                    "retract_speed",
-                    "unretract_extra_length",
-                    "unretract_speed",
-                ],
-                "motion_report": ["live_position", "live_velocity", "live_extruder_velocity"],
-                "exclude_object": ["current_object", "objects", "excluded_objects"],
-                "manual_probe": ["is_active"],
-                "screws_tilt_adjust": ["results", "error", "max_deviation"],
+                "motion_report": ["live_position", "live_velocity"],
             }
         }
-        for extruder in self.printer.get_tools():
-            requested_updates["objects"][extruder] = [
-                "target",
-                "temperature",
-                "pressure_advance",
-                "smooth_time",
-                "power",
-            ]
         for h in self.printer.get_heaters():
             requested_updates["objects"][h] = ["target", "temperature", "power"]
         for t in self.printer.get_temp_sensors():
@@ -375,8 +349,6 @@ class KlipperScreen(Gtk.Window):
             requested_updates["objects"][f] = ["target", "temperature"]
         for f in self.printer.get_fans():
             requested_updates["objects"][f] = ["speed"]
-        for f in self.printer.get_filament_sensors():
-            requested_updates["objects"][f] = ["enabled", "filament_detected"]
         for p in self.printer.get_pwm_tools() + self.printer.get_output_pins():
             requested_updates["objects"][p] = ["value"]
         for led in self.printer.get_leds():
@@ -880,16 +852,11 @@ class KlipperScreen(Gtk.Window):
 
     def state_paused(self):
         self.state_printing()
-        if self._config.get_main_config().getboolean("auto_open_extrude", fallback=True):
-            self.show_panel("extrude")
 
     def state_printing(self):
-        self.show_panel("job_status", remove_all=True)
+        self.base_panel.update_action_bar()
 
     def state_ready(self, wait=True):
-        # Do not return to main menu if completing a job, timeouts/user input will return
-        if "job_status" in self._cur_panels and wait:
-            return
         if not self.state.initialized:
             logging.debug("Printer not initialized yet")
             self.printer.state = "not ready"
@@ -907,14 +874,7 @@ class KlipperScreen(Gtk.Window):
         self.printer_initializing(_("Klipper has shutdown") + "\n\n" + msg, go_to_splash=True)
 
     def check_active_commands(self):
-        if self.printer.get_stat("bed_screws", "is_active"):
-            if "bed_level" not in self._cur_panels:
-                self.show_panel("bed_level")
-            return
-        elif self.printer.get_stat("manual_probe", "is_active"):
-            if "zcalibrate" not in self._cur_panels:
-                self.show_panel("zcalibrate")
-            return
+        return
 
     def update_shortcut(self, target):
         self.base_panel.update_shortcut(target)
