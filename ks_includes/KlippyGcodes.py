@@ -29,18 +29,6 @@ class KlippyGcodes:
         return f"M220 S{rate}"
 
     @staticmethod
-    def bed_mesh_load(profile):
-        return f"BED_MESH_PROFILE LOAD='{profile}'"
-
-    @staticmethod
-    def bed_mesh_remove(profile):
-        return f"BED_MESH_PROFILE REMOVE='{profile}'"
-
-    @staticmethod
-    def bed_mesh_save(profile):
-        return f"BED_MESH_PROFILE SAVE='{profile}'"
-
-    @staticmethod
     def set_led_color(led, color):
         return (
             f'SET_LED LED="{led}" '

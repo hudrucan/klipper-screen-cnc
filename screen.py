@@ -32,7 +32,6 @@ from ks_includes.KlippyUDS import KlippyUDS
 from ks_includes.KlippyWebsocket import KlippyWebsocket
 from ks_includes.notification_handler import NotificationHandler
 from ks_includes.printer import Printer
-from ks_includes.spoolman_api import SpoolmanAPI
 from ks_includes.widgets.keyboard import Keyboard
 from ks_includes.widgets.lockscreen import LockScreen
 from ks_includes.widgets.prompts import Prompt
@@ -299,7 +298,6 @@ class KlipperScreen(Gtk.Window):
                 self.printers[ind][name]["moonraker_path"],
                 self.printers[ind][name]["moonraker_ssl"],
             )
-        self.spoolman_api = SpoolmanAPI(self._ws)
         if self.files is None:
             self.files = KlippyFiles(self)
         else:
@@ -635,7 +633,7 @@ class KlipperScreen(Gtk.Window):
         elif "splash_screen" in self._cur_panels:
             menu = "__splashscreen"
         else:
-            menu = "__print"
+            menu = "__main"
 
         logging.info(f"#### Menu {menu}")
         disname = self._config.get_menu_name(menu, name)
@@ -902,19 +900,6 @@ class KlipperScreen(Gtk.Window):
     def _socket_callback(self, action, data):
         self._notification_handler.handle(action, data)
 
-    def get_active_spool(self):
-        self.spoolman_api.get_active_spool_id(lambda result: self.set_active_spool_details(result))
-
-    def set_active_spool_details(self, spool_id=None):
-        self.spoolman_api.get_spool_details(spool_id, lambda r: self._apply_spool_data(spool_id, r))
-
-    def _apply_spool_data(self, spool_id, result):
-        if result:
-            self.printer.set_active_spool(spool_data=result)
-        else:
-            self.printer.set_active_spool(spool_data={"id": spool_id})
-        self.process_update("notify_active_spool_set", {"spool_id": spool_id})
-
     def process_action(self, action):
         if action.startswith("prompt"):
             if action.startswith("prompt_begin"):
@@ -1122,8 +1107,6 @@ class KlipperScreen(Gtk.Window):
             self._ws.api.get_power_devices(self.set_power_devices)
         if "webcam" in self.server_info["components"]:
             self._ws.api.list_webcams(self.set_cameras)
-        if "spoolman" in self.server_info["components"]:
-            self.printer.enable_spoolman()
         self.init_klipper()
 
     def set_power_devices(self, data, method, params):
@@ -1227,8 +1210,6 @@ class KlipperScreen(Gtk.Window):
             self.init_tempstore()
 
         self.files.set_gcodes_path()
-        if "spoolman" in self.server_info["components"]:
-            self.get_active_spool()
         logging.info("Printer initialized")
         self.state.initialized = True
         self.state.reinit_count = 0

@@ -47,20 +47,15 @@ class NotificationHandler:
 
         self._screen.printer.process_update(data)
 
-        if (
-            "manual_probe" in data
-            and data["manual_probe"]["is_active"]
-            and "zcalibrate" not in self._screen._cur_panels
-        ):
-            self._screen.show_panel("zcalibrate")
+        if "manual_probe" in data and data["manual_probe"]["is_active"]:
+            logging.info("Ignoring manual probe UI event in CNC mode")
 
         if (
             "screws_tilt_adjust" in data
             and "max_deviation" in data["screws_tilt_adjust"]
             and not data["screws_tilt_adjust"]["max_deviation"]
-            and "bed_level" not in self._screen._cur_panels
         ):
-            self._screen.show_panel("bed_level")
+            logging.info("Ignoring screws tilt UI event in CNC mode")
 
     def _filelist_changed(self, data):
         if self._screen.files is not None:
@@ -97,14 +92,6 @@ class NotificationHandler:
 
         if data.startswith("echo: "):
             self._screen.show_popup_message(data[6:], 1, from_ws=True)
-        elif "!! Extrude below minimum temp" in data:
-            if self._screen._cur_panels[-1] != "temperature":
-                self._screen.show_panel(
-                    "temperature",
-                    extra=self._screen.printer.get_stat("toolhead", "extruder"),
-                )
-            self._screen.show_popup_message(_("Temperature too low to extrude"))
-            return True
         elif data.startswith("!! "):
             self._screen.show_popup_message(data[3:], 3, from_ws=True)
         elif (

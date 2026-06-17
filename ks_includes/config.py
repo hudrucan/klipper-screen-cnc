@@ -198,7 +198,6 @@ class KlipperScreenConfig:
                     "use-matchbox-keyboard",
                     "show_heater_power",
                     "show_scroll_steppers",
-                    "auto_open_extrude",
                     "start_locked",
                     "keyboard_navigation",
                 )
@@ -244,11 +243,7 @@ class KlipperScreenConfig:
                     "power_devices",
                     "titlebar_items",
                     "hidden_sensors",
-                    "z_babystep_values",
-                    "extrude_distances",
-                    "extrude_speeds",
                     "move_distances",
-                    "zcalibrate_custom_commands",
                 )
                 numbers = (
                     "moonraker_port",
@@ -257,7 +252,6 @@ class KlipperScreenConfig:
                     "screw_rotation",
                     "calibrate_x_position",
                     "calibrate_y_position",
-                    "spool_low_limit",
                 )
             elif section.startswith("preheat "):
                 strs = ("gcode", "")
@@ -266,9 +260,6 @@ class KlipperScreenConfig:
                 strs = ("name", "icon", "panel", "method", "params", "enable", "confirm", "style")
             elif section.startswith("graph") or section.startswith("displayed_macros"):
                 bools = [f"{option}" for option in config[section]]
-            elif section.startswith("spoolman"):
-                numbers = ("sync_rate", "spool_low_limit")
-                bools = [f"{option}" for option in config[section] if option not in numbers]
             else:
                 self.errors.append(f"Section [{section}] not recognized")
 
@@ -476,15 +467,6 @@ class KlipperScreenConfig:
                     "type": None,
                     "tooltip": _("Useful for un-responsive touchscreens"),
                     "value": "False",
-                    "callback": screen.reload_panels,
-                }
-            },
-            {
-                "auto_open_extrude": {
-                    "section": "main",
-                    "name": _("Auto-open Extrude On Pause"),
-                    "type": None,
-                    "value": "True",
                     "callback": screen.reload_panels,
                 }
             },
@@ -814,7 +796,6 @@ class KlipperScreenConfig:
 
         extra_sections = [i for i in self.config.sections() if i.startswith("displayed_macros")]
         extra_sections.extend([i for i in self.config.sections() if i.startswith("graph")])
-        extra_sections.extend([i for i in self.config.sections() if i.startswith("spoolman")])
         for section in extra_sections:
             for item in self.config.options(section):
                 value = self.config[section].getboolean(item, fallback=True)

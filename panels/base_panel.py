@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import logging
-import os
-import pathlib
 
 import gi
 
@@ -9,7 +7,7 @@ gi.require_version("Gtk", "3.0")
 from datetime import datetime
 from math import log
 
-from gi.repository import GdkPixbuf, Gio, GLib, Gtk, Pango
+from gi.repository import GLib, Gtk, Pango
 from jinja2 import Environment
 
 from ks_includes.screen_panel import ScreenPanel
@@ -31,13 +29,10 @@ class BasePanel(ScreenPanel):
         self.time_format = self._config.get_main_config().getboolean("24htime", True)
         self.time_update = None
         self.battery_update = None
-        self.spoolman_update = None
         self.titlebar_items = []
         self.titlebar_name_type = None
         self.titlebar_labels = {}
         self.titlebar_populated = False
-        self.spoolman_low_limit = 20
-        self.spoolman_current_color = None
         self.current_extruder = None
         self.last_usage_report = datetime.now()
         self.usage_report = 0
@@ -109,16 +104,6 @@ class BasePanel(ScreenPanel):
         for widget in self.control["battery_box"]:
             widget.show()
 
-        self.labels["spoolman_icon"] = Gtk.Image()
-        self.labels["spoolman_icon"].set_from_pixbuf(self.get_spoolman_icon_pixbuf())
-        self.labels["spoolman_weight"] = Gtk.Label(label="?")
-        spoolman_box = Gtk.Box()
-        spoolman_box.pack_start(self.labels["spoolman_icon"], False, False, 7)
-        spoolman_box.pack_start(self.labels["spoolman_weight"], False, False, 0)
-        self.control["spoolman_box"] = Gtk.EventBox()
-        self.control["spoolman_box"].add(spoolman_box)
-        self.control["spoolman_box"].connect("button-press-event", self.open_spool_panel)
-
         self.titlebar = Gtk.Box(spacing=5, valign=Gtk.Align.CENTER)
         self.titlebar.get_style_context().add_class("title_bar")
         self.titlebar.add(self.control["item_box"])
@@ -184,48 +169,6 @@ class BasePanel(ScreenPanel):
         self.battery_icons = self.load_battery_icons()
         self.battery_percentage()
 
-    def get_spoolman_icon_pixbuf(self, color=None):
-        if not color:
-            self.get_active_spoolman_color()
-        klipperscreendir = pathlib.Path(__file__).parent.resolve().parent
-        icon_path = os.path.join(
-            klipperscreendir, "styles", self._screen.theme, "images", "spool.svg"
-        )
-        icon_size = self._gtk.img_scale * self.bts * 0.9
-        if not os.path.isfile(icon_path):
-            icon_path = os.path.join(klipperscreendir, "styles", "spool.svg")
-        try:
-            svg = pathlib.Path(icon_path).read_text(encoding="utf-8")
-            svg = svg.replace("var(--filament-color)", f"#{color}")
-            stream = Gio.MemoryInputStream.new_from_data(svg.encode(), None)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_stream_at_scale(
-                stream,
-                -1,
-                icon_size,
-                True,
-                None,
-            )
-            stream.close_async(2)
-            return pixbuf
-        except Exception as e:
-            logging.error(f"Couldn't load spoolman icon: {e}")
-            return self._gtk.PixbufFromIcon("spool", icon_size, icon_size)
-
-    def get_active_spoolman_color(self):
-        default_color = "000000"
-        if (
-            self._printer is None
-            or not self._printer.active_spool
-            or "filament" not in self._printer.active_spool
-            or not self._printer.active_spool["filament"]
-        ):
-            return default_color
-        filament = self._printer.active_spool["filament"]
-        color = filament.get("color_hex")
-        if isinstance(color, str):
-            return color.strip().lstrip("#") or default_color
-        return default_color
-
     def show_titlebar_items(self):
         if self.titlebar_populated:
             return
@@ -278,10 +221,6 @@ class BasePanel(ScreenPanel):
                 # Users can fill the bar if they want
                 if n >= nlimit + 1:
                     break
-                if item == "spool" and self._printer.spoolman:
-                    self.add_spoolman_box()
-                    n += 1
-                    continue
                 for device in devices:
                     name = device.split()[1] if len(device.split()) > 1 else device
                     if (
@@ -291,35 +230,16 @@ class BasePanel(ScreenPanel):
                         self.control["item_box"].add(self.titlebar_labels[f"{device}_eventbox"])
                         n += 1
                         break
-            if (
-                n < nlimit
-                and self._printer.spoolman
-                and self.control["spoolman_box"].get_parent() != self.control["item_box"]
-            ):
-                self.add_spoolman_box()
-                n += 1
-
             self.control["item_box"].show_all()
             self.titlebar_populated = True
         except Exception as e:
             logging.debug(f"Couldn't create heaters box: {e}")
 
     def clear_titlebar_items(self):
-        if self.spoolman_update is not None:
-            GLib.source_remove(self.spoolman_update)
-            self.spoolman_update = None
         for child in list(self.control["item_box"].get_children()):
             self.control["item_box"].remove(child)
         self.titlebar_labels.clear()
         self.titlebar_populated = False
-
-    def add_spoolman_box(self):
-        self.control["item_box"].add(self.control["spoolman_box"])
-        self.set_spoolman_refresh()
-
-    def open_spool_panel(self, widget=None, event=None):
-        self._screen.show_panel("spoolman")
-        return True
 
     def open_temp_panel(self, widget=None, event=None, device=None):
         self._screen.show_panel("temperature", extra=device)
@@ -351,11 +271,6 @@ class BasePanel(ScreenPanel):
         if self.battery_update is None:
             self.battery_update = GLib.timeout_add_seconds(60, self.battery_percentage)
 
-    def set_spoolman_refresh(self):
-        if self.spoolman_update is None:
-            rate = self._config.get_config().getint("spoolman", "sync_rate", fallback=20)
-            self.spoolman_update = GLib.timeout_add_seconds(rate, self.fetch_spoolman)
-
     def get_printer_state(self):
         printing = self._printer and self._printer.state in {"printing", "paused"}
         connected = self._printer and self._printer.state not in {
@@ -382,44 +297,6 @@ class BasePanel(ScreenPanel):
         self.set_title(panel.title)
         self.content.add(panel.content)
 
-    def update_spoolman_alert_visuals(self, alert):
-        if alert:
-            self.labels["spoolman_weight"].get_style_context().add_class("spoolman_low")
-        else:
-            self.labels["spoolman_weight"].get_style_context().remove_class("spoolman_low")
-
-    def update_spoolman_weight_label(self):
-        if self._printer is None:
-            return
-        if (
-            not self._printer.spoolman
-            or not self._printer.active_spool
-            or "remaining_weight" not in self._printer.active_spool
-            or self._printer.active_spool["remaining_weight"] is None
-        ):
-            self.update_spoolman_alert_visuals(False)
-            self.labels["spoolman_weight"].set_label("?")
-            return
-        remaining_weight = self._printer.active_spool["remaining_weight"]
-        self.labels["spoolman_weight"].set_label(f"{round(remaining_weight):.0f} g")
-        self.update_spoolman_alert_visuals(remaining_weight < self.spoolman_low_limit)
-        color = self.get_active_spoolman_color()
-        if color != self.spoolman_current_color:
-            self.labels["spoolman_icon"].set_from_pixbuf(self.get_spoolman_icon_pixbuf(color))
-            self.spoolman_current_color = color
-
-    def fetch_spoolman(self):
-        if (
-            not self._printer
-            or "printer_select" in self._screen._cur_panels
-            or self.control["spoolman_box"].get_parent() != self.control["item_box"]
-        ):
-            logging.debug("Stopping Spoolman updates")
-            self.spoolman_update = None
-            return False
-        self._screen.get_active_spool()
-        return True
-
     def back(self, widget=None):
         if self.current_panel is None:
             return
@@ -432,9 +309,6 @@ class BasePanel(ScreenPanel):
             self._screen._menu_go_back()
 
     def process_update(self, action, data):
-        if action == "notify_active_spool_set":
-            self.update_spoolman_weight_label()
-            return
         if action == "notify_proc_stat_update":
             cpu = data["system_cpu_usage"]["cpu"]
             memory = (data["system_memory"]["used"] / data["system_memory"]["total"]) * 100
@@ -694,16 +568,9 @@ class BasePanel(ScreenPanel):
                 logging.info(f"Hidden sensors: {self.hidden_sensors}")
             else:
                 ScreenPanel.hidden_sensors = []
-            low_limit = self.ks_printer_cfg.getfloat("spool_low_limit", fallback=None)
-            if low_limit is None:
-                low_limit = self._config.get_config().getfloat(
-                    "spoolman", "spool_low_limit", fallback=20.0
-                )
-            self.spoolman_low_limit = low_limit
         else:
             self.titlebar_items = []
             ScreenPanel.hidden_sensors = []
-            self.spoolman_low_limit = 20
 
     def show_update_dialog(self):
         if self.update_dialog is not None:

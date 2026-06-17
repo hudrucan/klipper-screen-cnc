@@ -394,7 +394,6 @@ class Panel(ScreenPanel):
         self.buttons = {
             "cancel": self._gtk.Button("stop", _("Cancel"), "color2"),
             "control": self._gtk.Button("settings", _("Settings"), "color3"),
-            "fine_tune": self._gtk.Button("fine-tune", _("Fine Tuning"), "color4"),
             "menu": self._gtk.Button("complete", _("Main Menu"), "color4"),
             "pause": self._gtk.Button("pause", _("Pause"), "color1"),
             "restart": self._gtk.Button("refresh", _("Restart"), "color3"),
@@ -406,7 +405,6 @@ class Panel(ScreenPanel):
         }
         self.buttons["cancel"].connect("clicked", self.cancel)
         self.buttons["control"].connect("clicked", self._screen._go_to_submenu, "")
-        self.buttons["fine_tune"].connect("clicked", self.menu_item_clicked, {"panel": "fine_tune"})
         self.buttons["menu"].connect("clicked", self.close_panel)
         self.buttons["pause"].connect("clicked", self.pause)
         self.buttons["restart"].connect("clicked", self.restart)
@@ -494,17 +492,12 @@ class Panel(ScreenPanel):
             {"name": _("Cancel Print"), "response": Gtk.ResponseType.OK, "style": "dialog-error"},
             {"name": _("Go Back"), "response": Gtk.ResponseType.CANCEL, "style": "dialog-info"},
         ]
-        if len(self._printer.get_stat("exclude_object", "objects")) > 1:
-            buttons.insert(0, {"name": _("Exclude Object"), "response": Gtk.ResponseType.APPLY})
         label = Gtk.Label(hexpand=True, vexpand=True, wrap=True)
         label.set_markup(_("Are you sure you wish to cancel this print?"))
         self._gtk.Dialog(_("Cancel"), buttons, label, self.cancel_confirm)
 
     def cancel_confirm(self, dialog, response_id):
         self._gtk.remove_dialog(dialog)
-        if response_id == Gtk.ResponseType.APPLY:
-            self.menu_item_clicked(None, {"panel": "exclude"})
-            return
         if response_id == Gtk.ResponseType.CANCEL:
             self.enable_button("pause", "cancel")
             return
@@ -778,12 +771,9 @@ class Panel(ScreenPanel):
         slicer_time /= sqrt(self.speed_factor)
         if progress <= estimate_above:
             return last_time or slicer_time or filament_time or file_time
-        objects = self._printer.get_stat("exclude_object", "objects")
-        excluded_objects = self._printer.get_stat("exclude_object", "excluded_objects")
-        exclude_compensation = 3 * (len(excluded_objects) / len(objects)) if len(objects) > 0 else 0
-        weight_last = 4.0 - exclude_compensation if print_duration < last_time else 0
+        weight_last = 4.0 if print_duration < last_time else 0
         weight_slicer = (
-            1.0 + estimate_above - progress - exclude_compensation
+            1.0 + estimate_above - progress
             if print_duration < slicer_time
             else 0
         )
@@ -847,16 +837,14 @@ class Panel(ScreenPanel):
         if self.state == "printing":
             self.buttons["button_grid"].attach(self.buttons["pause"], 0, 0, 1, 1)
             self.buttons["button_grid"].attach(self.buttons["cancel"], 1, 0, 1, 1)
-            self.buttons["button_grid"].attach(self.buttons["fine_tune"], 2, 0, 1, 1)
-            self.buttons["button_grid"].attach(self.buttons["control"], 3, 0, 1, 1)
+            self.buttons["button_grid"].attach(self.buttons["control"], 2, 0, 1, 1)
             self.enable_button("pause", "cancel")
             self._gtk.Button_busy(self.buttons["cancel"], False)
             self.can_close = False
         elif self.state == "paused":
             self.buttons["button_grid"].attach(self.buttons["resume"], 0, 0, 1, 1)
             self.buttons["button_grid"].attach(self.buttons["cancel"], 1, 0, 1, 1)
-            self.buttons["button_grid"].attach(self.buttons["fine_tune"], 2, 0, 1, 1)
-            self.buttons["button_grid"].attach(self.buttons["control"], 3, 0, 1, 1)
+            self.buttons["button_grid"].attach(self.buttons["control"], 2, 0, 1, 1)
             self.enable_button("resume", "cancel")
             self._gtk.Button_busy(self.buttons["cancel"], False)
             self.can_close = False

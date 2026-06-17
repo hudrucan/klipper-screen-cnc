@@ -26,10 +26,6 @@ class Printer:
         self.tempstore_size = 1200
         self.cameras = []
         self.available_commands = {}
-        self.spoolman = False
-        self.active_spool_id = None
-        self.active_spool = None
-        self.active_spool_checked = False
         self.temp_devices = self.sensors = None
         self.system_info = {}
         self.warnings = []
@@ -51,9 +47,6 @@ class Printer:
         self.stop_tempstore_updates()
         self.system_info.clear()
         self.warnings = []
-        self.active_spool_id = None
-        self.active_spool = None
-        self.active_spool_checked = False
 
         for x in self.config.keys():
             # Support for hiding devices by name
@@ -247,7 +240,6 @@ class Printer:
             "moonraker": {
                 "power_devices": {"count": len(self.get_power_devices())},
                 "cameras": {"count": len(self.cameras)},
-                "spoolman": self.spoolman,
             },
             "printer": {
                 "pause_resume": {"is_paused": self.state == "paused"},
@@ -424,12 +416,3 @@ class Printer:
                     temp = 0
                 self.tempstore[device][x].append(temp)
         return True
-
-    def enable_spoolman(self):
-        logging.info("Enabling Spoolman")
-        self.spoolman = True
-
-    def set_active_spool(self, spool_data):
-        self.active_spool = spool_data
-        if isinstance(spool_data, dict) and "id" in spool_data:
-            self.active_spool_id = spool_data["id"]

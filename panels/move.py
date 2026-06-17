@@ -215,12 +215,10 @@ class Panel(ScreenPanel):
             self.options.update(self.add_option("options", self.settings, name, option[name]))
 
     def reinit_panels(self, value):
-        self._screen.panels_reinit.append("bed_level")
-        self._screen.panels_reinit.append("bed_mesh")
+        return
 
     def reinit_move(self, widget):
         self._screen.panels_reinit.append("move")
-        self._screen.panels_reinit.append("zcalibrate")
         self.menu.clear()
 
     def process_update(self, action, data):
