@@ -1,7 +1,7 @@
 .idea/
 .vscode/
 .DS_Store
-KlipperScreen.conf
+klipper_screen.conf
 __pycache__/
 *.py[cod]
 *$py.class

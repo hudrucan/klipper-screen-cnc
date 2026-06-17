@@ -48,7 +48,7 @@ create_sudoers_file()
 ### /sbin/systemctl "reboot", /sbin/apt "update", .....
 Cmnd_Alias IWLIST = /sbin/iwlist wlan[0-9] scan
 Cmnd_Alias IWCONFIG = /sbin/iwconfig wlan[0-9]
-Cmnd_Alias SYSTEMCTL_KS_RESTART = /bin/systemctl restart KlipperScreen
+Cmnd_Alias SYSTEMCTL_KS_RESTART = /bin/systemctl restart klipper-screen
 
 %GROUPNAME ALL=(ALL) NOPASSWD: IWCONFIG, IWLIST, SYSTEMCTL_KS_RESTART
 #EOF

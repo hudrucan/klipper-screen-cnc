@@ -26,14 +26,14 @@ Clone the KlipperScreen repository and run the installation script:
 ```sh
 cd ~/
 git clone https://github.com/KlipperScreen/KlipperScreen.git
-./KlipperScreen/scripts/KlipperScreen-install.sh
+./klipper-screen-cnc/scripts/KlipperScreen-install.sh
 ```
 
-This script will install the necessary packages, create a Python virtual environment at `~/.KlipperScreen-env`, and install a systemd service file if you select it on the install.
+This script will install the necessary packages, create a Python virtual environment at `~/.klipper_screen_env`, and install a systemd service file if you select it on the install.
 
 If you want to run the install script silently do:
 ```sh
-BACKEND="X" SERVICE="Y" NETWORK="Y" START=1 ./KlipperScreen/scripts/KlipperScreen-install.sh
+BACKEND="X" SERVICE="Y" NETWORK="Y" START=1 ./klipper-screen-cnc/scripts/KlipperScreen-install.sh
 ```
 
 !!! tip
@@ -47,18 +47,18 @@ BACKEND="X" SERVICE="Y" NETWORK="Y" START=1 ./KlipperScreen/scripts/KlipperScree
     trusted_clients:
       127.0.0.1
     ```
-   Alternatively, add the [Moonraker API key](https://moonraker.readthedocs.io/en/latest/installation/#retrieving-the-api-key) to `KlipperScreen.conf`.
+   Alternatively, add the [Moonraker API key](https://moonraker.readthedocs.io/en/latest/installation/#retrieving-the-api-key) to `klipper_screen.conf`.
 
 2. To use the update manager feature of Moonraker for KlipperScreen, add the following block to `moonraker.conf`:
     ```ini
     [update_manager KlipperScreen]
     type: git_repo
-    path: ~/KlipperScreen
+    path: ~/klipper-screen-cnc
     origin: https://github.com/KlipperScreen/KlipperScreen.git
-    virtualenv: ~/.KlipperScreen-env
+    virtualenv: ~/.klipper_screen_env
     requirements: scripts/KlipperScreen-requirements.txt
     system_dependencies: scripts/system-dependencies.json
-    managed_services: KlipperScreen
+    managed_services: klipper-screen
     ```
 
 !!! tip

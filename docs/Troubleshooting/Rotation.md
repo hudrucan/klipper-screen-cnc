@@ -47,7 +47,7 @@ here are some examples:
     Save the file and restart KlipperScreen.
 
     ```bash
-    sudo service KlipperScreen restart
+    sudo service klipper-screen restart
     ```
 
     if KlipperScreen doesn't restart:

@@ -50,9 +50,9 @@ This article describe how to use KlipperScreen from an Android device using XSer
 3. Copy the sample launcher script with the following commands:
 
     ```bash
-    cd ~/KlipperScreen/scripts
+    cd ~/klipper-screen-cnc/scripts
     cp sample-android-adb.sh launch_KlipperScreen.sh
-    chmod +x ~/KlipperScreen/scripts/launch_KlipperScreen.sh
+    chmod +x ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
     ```
 
 4. Start Xserver-XSDL On the Android device
@@ -64,10 +64,10 @@ This article describe how to use KlipperScreen from an Android device using XSer
 1. Create a launcher script by entering the following commands:
 
     ```bash
-    rm ~/KlipperScreen/scripts/launch_KlipperScreen.sh
-    touch ~/KlipperScreen/scripts/launch_KlipperScreen.sh
-    chmod +x ~/KlipperScreen/scripts/launch_KlipperScreen.sh
-    nano ~/KlipperScreen/scripts/launch_KlipperScreen.sh
+    rm ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
+    touch ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
+    chmod +x ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
+    nano ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
     ```
 
 2. Start the app on the Android device (Xserver-XSDL or ViewTouch)
@@ -85,7 +85,7 @@ This article describe how to use KlipperScreen from an Android device using XSer
 
 Enter this command on the computer/SBC/Pi
 ```bash
-sudo service KlipperScreen restart
+sudo service klipper-screen restart
 ```
 
 ## Doesn't start

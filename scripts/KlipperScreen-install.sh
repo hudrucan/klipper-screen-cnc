@@ -2,7 +2,7 @@
 
 SCRIPTPATH=$(dirname -- "$(readlink -f -- "$0")")
 KSPATH=$(dirname "$SCRIPTPATH")
-KSENV="${KLIPPERSCREEN_VENV:-${HOME}/.KlipperScreen-env}"
+KSENV="${KLIPPERSCREEN_VENV:-${HOME}/.klipper_screen_env}"
 
 XSERVER="xinit xinput x11-xserver-utils xserver-xorg-input-evdev xserver-xorg-input-libinput xserver-xorg-legacy xserver-xorg-video-fbdev"
 CAGE="cage seatd xwayland"
@@ -165,16 +165,16 @@ install_systemd_service()
 {
     echo_text "Installing KlipperScreen unit file"
 
-    SERVICE=$(cat "$SCRIPTPATH"/KlipperScreen.service)
+    SERVICE=$(cat "$SCRIPTPATH"/klipper-screen.service)
     SERVICE=${SERVICE//KS_USER/$USER}
     SERVICE=${SERVICE//KS_ENV/$KSENV}
     SERVICE=${SERVICE//KS_DIR/$KSPATH}
     SERVICE=${SERVICE//KS_BACKEND/$BACKEND}
 
-    echo "$SERVICE" | sudo tee /etc/systemd/system/KlipperScreen.service > /dev/null
-    sudo systemctl unmask KlipperScreen.service
+    echo "$SERVICE" | sudo tee /etc/systemd/system/klipper-screen.service > /dev/null
+    sudo systemctl unmask klipper-screen.service
     sudo systemctl daemon-reload
-    sudo systemctl enable KlipperScreen
+    sudo systemctl enable klipper-screen
     sudo systemctl set-default multi-user.target
     sudo adduser "$USER" tty
 }
@@ -289,7 +289,7 @@ add_desktop_file()
 start_KlipperScreen()
 {
     echo_text "Starting service..."
-    sudo systemctl restart KlipperScreen
+    sudo systemctl restart klipper-screen
 }
 
 install_network_manager()

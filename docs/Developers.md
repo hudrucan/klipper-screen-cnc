@@ -19,7 +19,7 @@ See [scripts/system-dependencies.json](https://github.com/KlipperScreen/KlipperS
 ## Create a virtual environment
 For example:
 ```bash
-cd ~/KlipperScreen
+cd ~/klipper-screen-cnc
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r scripts/KlipperScreen-requirements.txt
@@ -27,7 +27,7 @@ pip install -r scripts/KlipperScreen-requirements.txt
 pip install -r scripts/dev-requirements.txt
 ```
 # Set configurations
-Create klipperscreen.conf and place it on the repo folder
+Create klipper_screen.conf and place it on the repo folder
 ```
 [main]
 show_cursor=True
@@ -61,7 +61,7 @@ This project uses [pre-commit](https://pre-commit.com/) to run linting and forma
 
 Install the hooks:
 ```bash
-cd ~/KlipperScreen
+cd ~/klipper-screen-cnc
 source .venv/bin/activate
 pip install pre-commit
 pre-commit install
@@ -72,4 +72,4 @@ This will automatically run `ruff check --fix` and `ruff format` on staged files
 ## Optional: Configure the IDE
 
 * Set interpreter to the virtual environment created
-* Set the run configuration to `KlipperScreen/screen.py`
+* Set the run configuration to `klipper-screen-cnc/screen.py`

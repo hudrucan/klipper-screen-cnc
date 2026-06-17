@@ -4,15 +4,15 @@
 
 When multiple printers are configured, you can customize their icons by placing an icon file in the following directory:
 
-`~/KlipperScreen/styles/printers/`
+`~/klipper-screen-cnc/styles/printers/`
 
-- The icon file name must match the exact printer name as configured in `KlipperScreen.conf`.
+- The icon file name must match the exact printer name as configured in `klipper_screen.conf`.
 - Supported formats for icons are SVG or PNG.
 
 Example:
 ```sh
-cp /path/to/printer_icon.svg ~/KlipperScreen/styles/printers/printer_name.svg
-sudo service KlipperScreen restart
+cp /path/to/printer_icon.svg ~/klipper-screen-cnc/styles/printers/printer_name.svg
+sudo service klipper-screen restart
 ```
 
 ## Custom Themes
@@ -20,7 +20,7 @@ sudo service KlipperScreen restart
 To create a custom theme for KlipperScreen, follow these steps:
 
 1. **Create Theme Directory:**
-    -  Navigate to `~/KlipperScreen/styles/`.
+    -  Navigate to `~/klipper-screen-cnc/styles/`.
     -  Create a new folder with the desired theme name.
 
 2. **Add Icon Images:**
@@ -34,7 +34,7 @@ To create a custom theme for KlipperScreen, follow these steps:
 Example procedure for creating a theme named `mytheme`:
 ```sh
 
-cd ~/KlipperScreen/styles/
+cd ~/klipper-screen-cnc/styles/
 # Create the directory
 mkdir -p mytheme/images
 # Copy required SVG icons
@@ -46,19 +46,19 @@ echo "window { background-color: #FFFFFF; }" > style.css
 4. **Apply the Theme:**
     - After creating your theme, restart the KlipperScreen service:
 ```sh
-sudo service KlipperScreen restart
+sudo service klipper-screen restart
 ```
     - Select you theme from the list in the options.
 
 ### Example: Creating a Custom Theme
 
 ```sh
-cd ~/KlipperScreen/styles/
+cd ~/klipper-screen-cnc/styles/
 mkdir -p mytheme/images
 cd mytheme
 cp ../default_theme/images/* images/
 echo "window { background-color: #FFFFFF; }" > style.css
-sudo service KlipperScreen restart
+sudo service klipper-screen restart
 ```
 
 ### Example: Custom Background and CSS

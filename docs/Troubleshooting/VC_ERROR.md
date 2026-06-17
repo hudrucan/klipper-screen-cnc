@@ -21,7 +21,7 @@ usermod -a -G tty pi
 
 Restart KlipperScreen:
 ```sh
-sudo service KlipperScreen restart
+sudo service klipper-screen restart
 ```
 
 If it's still failing:
@@ -34,6 +34,6 @@ sudo bash -c "echo needs_root_rights=yes>>/etc/X11/Xwrapper.config"
 
 Restart KlipperScreen:
 ```sh
-sudo service KlipperScreen restart
+sudo service klipper-screen restart
 ```
 

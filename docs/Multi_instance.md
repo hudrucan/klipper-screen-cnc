@@ -31,7 +31,7 @@ then the network will influence the response time of the interface.
 The default KlipperScreen service will launch the script
 
 ```sh
-nano $HOME/KlipperScreen/scripts/launch_KlipperScreen.sh
+nano $HOME/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
 ```
 
 Example script:
@@ -39,7 +39,7 @@ Example script:
 ```sh
 #!/bin/bash
 /usr/bin/xinit $KS_XCLIENT &
-DISPLAY=192.168.18.147:0 $KS_XCLIENT -c $HOME/.config/KlipperScreen/tablet.cfg &
+DISPLAY=192.168.18.147:0 $KS_XCLIENT -c $HOME/.config/klipper_screen/tablet.cfg &
 wait
 ```
 
@@ -49,7 +49,7 @@ notice that the second instance uses a configuration that is specific to itself.
 
 Dont forget to restart the service to load the changes
 ```sh
-sudo systemctl restart KlipperScreen
+sudo systemctl restart klipper-screen
 ```
 
 ## Option 2: Using a separate service
@@ -61,11 +61,11 @@ sudo systemctl restart KlipperScreen
 Create a new service unit file
 
 ```sh
-sudo nano /etc/systemd/system/KlipperScreen_tablet.service
+sudo nano /etc/systemd/system/klipper-screen_tablet.service
 ```
 
 Example of a service unit for an android tablet: (change the IP and username)
-```ini title="KlipperScreen_tablet.service"
+```ini title="klipper-screen-tablet.service"
 [Unit]
 Description=KlipperScreen Tablet
 StartLimitIntervalSec=0
@@ -82,10 +82,10 @@ RestartSec=2
 SupplementaryGroups=klipperscreen
 # username
 User=pi
-WorkingDirectory=/home/pi/KlipperScreen
+WorkingDirectory=/home/pi/klipper-screen-cnc
 Environment="DISPLAY=192.168.18.147:0"
 # Absolute paths are required, separate config is optional
-ExecStart=/home/pi/.KlipperScreen-env/bin/python /home/pi/KlipperScreen/screen.py -c /home/pi/.config/KlipperScreen/tablet.cfg
+ExecStart=/home/pi/.klipper_screen_env/bin/python /home/pi/klipper-screen-cnc/screen.py -c /home/pi/.config/klipper_screen/tablet.cfg
 
 [Install]
 WantedBy=multi-user.target
@@ -93,12 +93,12 @@ WantedBy=multi-user.target
 
 Test your new service
 ```sh
-sudo systemctl start KlipperScreen_tablet
+sudo systemctl start klipper-screen-tablet
 ```
 
 Optional: After verifying it works, make it load when the system starts
 ```sh
-sudo systemctl enable KlipperScreen_tablet
+sudo systemctl enable klipper-screen-tablet
 ```
 
 if you made a mistake in the config you'll have to reload the service unit
@@ -110,7 +110,7 @@ Add the new service to moonraker so it can be started and stopped from the UI
 ```sh
 nano $HOME/printer_data/moonraker.asvc
 ```
-In the example above it was `KlipperScreen_tablet`. Beware that is case sensitive
+In the example above it was `klipper-screen-tablet`. Beware that is case sensitive
 
 So in this case it would look something like this:
 ``` title="moonraker.asvc"
@@ -118,7 +118,7 @@ klipper_mcu
 webcamd
 MoonCord
 KlipperScreen
-KlipperScreen_tablet
+klipper-screen-tablet
 moonraker-telegram-bot
 moonraker-obico
 sonar

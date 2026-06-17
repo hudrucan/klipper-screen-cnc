@@ -1,7 +1,7 @@
 # Configuration
 
 Usually you don't need to create a configuration file, but if you need to change something that is not changeable in the UI
-create a blank file in `~/printer_data/config/KlipperScreen.conf`, if the file already exist then just edit it.
+create a blank file in `~/printer_data/config/klipper_screen.conf`, if the file already exist then just edit it.
 
 Write in the file only the options that need to be changed, and restart KlipperScreen.
 
@@ -276,9 +276,9 @@ panel: preheat
 
 KlipperScreen will search for a configuration file in the following order:
 
-1. _~/printer_data/config/KlipperScreen.conf_
-2. _~/.config/KlipperScreen/KlipperScreen.conf_
-3. _${KlipperScreen_Directory}/KlipperScreen.conf_
+1. _~/printer_data/config/klipper_screen.conf_
+2. _~/.config/klipper_screen/klipper_screen.conf_
+3. _${KlipperScreen_Directory}/klipper_screen.conf_
 
 If you need a custom location for the configuration file, you can add [launch argument](#adding-launch-arguments)
 
@@ -307,12 +307,12 @@ The recommended way to add launch arguments is:
 
 1. Create a launch script:
     ```bash
-    touch ~/KlipperScreen/scripts/launch_KlipperScreen.sh
+    touch ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
     chmod +x launch_KlipperScreen.sh
     ```
 2. Edit the script:
     ```bash
-    nano ~/KlipperScreen/scripts/launch_KlipperScreen.sh
+    nano ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
     ```
     Add the init and the launch argument, this example will launch KlipperScreen on the second monitor if exists:
     ```

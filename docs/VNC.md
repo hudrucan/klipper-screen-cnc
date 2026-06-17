@@ -16,7 +16,7 @@ The host device could be for example a Raspberry Pi
     sudo apt install tigervnc-standalone-server
     ```
 
-3. Create `~/KlipperScreen/scripts/launch_KlipperScreen.sh`:
+3. Create `~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh`:
 
     ```bash
     #!/bin/bash
@@ -30,12 +30,12 @@ The host device could be for example a Raspberry Pi
 
 4. Make the script executable
     ```bash
-    chmod +x ~/KlipperScreen/scripts/launch_KlipperScreen.sh
+    chmod +x ~/klipper-screen-cnc/scripts/launch_KlipperScreen.sh
     ```
 
 5. Restart KlipperScreen or reboot the system:
     ```bash
-    sudo systemctl restart KlipperScreen.service
+    sudo systemctl restart klipper-screen.service
     ```
 
 ## On the remote device:

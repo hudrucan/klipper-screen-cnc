@@ -23,7 +23,7 @@ SCREEN_BLANKING_OPTIONS = [
 klipperscreendir = pathlib.Path(__file__).parent.resolve().parent
 home = os.path.expanduser("~/")
 printer_data_config = os.path.join(home, "printer_data", "config")
-xdg_config = os.path.join(home, ".config", "KlipperScreen")
+xdg_config = os.path.join(home, ".config", "klipper_screen")
 
 
 class ConfigError(Exception):
@@ -32,7 +32,7 @@ class ConfigError(Exception):
 
 class KlipperScreenConfig:
     config = None
-    configfile_name = "KlipperScreen.conf"
+    configfile_name = "klipper_screen.conf"
     do_not_edit_line = "#~# --- Do not edit below this line. This section is auto generated --- #~#"
     do_not_edit_prefix = "#~#"
 
@@ -55,7 +55,7 @@ class KlipperScreenConfig:
                 directory = "/".join(self.default_config_path.split("/")[:-1])
                 self._include_config(self.config, directory, include, log=False)
             self.validate_config(self.config)  # In case a user altered defaults
-            # parse KlipperScreen.conf
+            # parse klipper_screen.conf
             if self.config_path != self.default_config_path:
                 user_def, saved_def = self.separate_saved_config(self.config_path)
                 self.user_cfg = configparser.ConfigParser()
@@ -722,12 +722,10 @@ class KlipperScreenConfig:
                     saved_def.append(line[(len(self.do_not_edit_prefix) + 1) :])
         return ["\n".join(user_def), None if saved_def is None else "\n".join(saved_def)]
 
-    @staticmethod
-    def check_path_exists(base_dir, filename):
-        for name in (filename, filename.lower()):
-            full_path = os.path.join(base_dir, name)
-            if os.path.exists(full_path):
-                return full_path
+    def check_path_exists(self, base_dir, filename):
+        full_path = os.path.join(base_dir, filename)
+        if os.path.exists(full_path):
+            return full_path
         return None
 
     def get_config_file_location(self, file):

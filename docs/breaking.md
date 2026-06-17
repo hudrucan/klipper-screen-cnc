@@ -7,7 +7,7 @@ Only breaking changes will be listed here.
 
 #### [2024_01_26](https://github.com/KlipperScreen/KlipperScreen/commit/9d0e4b841f905f0034a7c6fefefcf041e38b90a3)
 * Deprecated old ~/klipper_config folder  users need to place the configfile
-in ~/printer_data/config, ~/.config/KlipperScreen, or directly in the repo
+in ~/printer_data/config, ~/.config/klipper_screen, or directly in the repo
 
 #### [2023 10 08](https://github.com/KlipperScreen/KlipperScreen/commit/b6199a4f24beb02dc0f8956f60c88e3ba3468927)
 * Deprecated [bed_screws] and [z_calibrate_position] sections those configs should go in [printer name]
@@ -20,12 +20,12 @@ in ~/printer_data/config, ~/.config/KlipperScreen, or directly in the repo
 Fixing [2021 05 20](https://github.com/KlipperScreen/KlipperScreen/commit/eb801486928bf02709033dcbc5f0a45ca43b23c1)
 
 #### [2022 03 10](https://github.com/KlipperScreen/KlipperScreen/commit/490dc929bd11e3c4200b999ce7204d84fa0bc184)
-* The "Power On Printer" button now requires power_devices under the printer section in KlipperScreen.conf
+* The "Power On Printer" button now requires power_devices under the printer section in klipper_screen.conf
 the power_devices allowed are those defined in the config of moonraker of the printer
 The "Power" panel will be in the Menu if there are power devices found
 
 #### [2022 03 01](https://github.com/KlipperScreen/KlipperScreen/commit/49ab84e8d51535d3469d97fdee53099cca6abc39)
-* The "Power On Printer" button now requires that the printer name in KlipperScreen.conf
+* The "Power On Printer" button now requires that the printer name in klipper_screen.conf
 and the power device in moonraker.conf to have the same name.
 The "Power" panel will be in the Menu if there are power devices found
 

@@ -5,7 +5,7 @@
 
 The first step to troubleshooting any problem is getting the cause of the error.
 
-* Find KlipperScreen.log:
+* Find klipper_screen.log:
 
 !!! warning "Important"
     This log file should be provided if you ask for support.
@@ -27,17 +27,17 @@ if you can't find it in the web interface, you will need to grab the system logs
 
 ## System logs
 
-If [KlipperScreen.log](#first-steps) doesn't exist open a terminal in the host (typically from SSH) and
+If [klipper_screen.log](#first-steps) doesn't exist open a terminal in the host (typically from SSH) and
 run this commands:
 
 ??? info "Multiple printers on the same host"
     If the host is running multiple printers you may need to change `printer_data` to `printer_1_data`
 
 ```sh
-systemctl status KlipperScreen > ~/printer_data/logs/KlipperScreen_systemctl.log
-journalctl -xe -u KlipperScreen > ~/printer_data/logs/KlipperScreen_journalctl.log
+systemctl status klipper-screen > ~/printer_data/logs/klipper-screen_systemctl.log
+journalctl -xe -u klipper-screen > ~/printer_data/logs/klipper-screen_journalctl.log
 cp /var/log/Xorg.0.log ~/printer_data/logs/KlipperScreen_Xorg.log
-cp -n /tmp/KlipperScreen.log ~/printer_data/logs/KlipperScreen.log
+cp -n /tmp/klipper_screen.log ~/printer_data/logs/klipper_screen.log
 ```
 
 This will copy all the relevant logs to the folder described above, so they can be downloaded from the browser.
@@ -49,8 +49,8 @@ With the method described in the first section. You may need to press refresh or
         Please do not copy-paste the output of the terminal when providing info for an issue,
         most of the time this output will be incomplete, use the method described above
     ```sh
-    systemctl status KlipperScreen
-    journalctl -xe -u KlipperScreen
+    systemctl status klipper-screen
+    journalctl -xe -u klipper-screen
     cat /var/log/Xorg.0.log
     ```
 
@@ -138,7 +138,7 @@ If you find a way of turning it off, please share it: [Contact](Contact.md)
 ## Unauthorized
 
 Unauthorized means that you need add the IP of the device that runs KlipperScreen to the moonraker trusted clients
-or the Moonraker api-key to klipperscreen.conf
+or the Moonraker api-key to klipper_screen.conf
 
 [Follow this steps](Installation.md#moonraker-configuration)
 

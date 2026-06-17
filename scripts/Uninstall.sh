@@ -9,20 +9,20 @@ echo "Uninstalling KlipperScreen"
 echo ""
 
 echo "* Stopping service"
-sudo systemctl stop KlipperScreen.service
-sudo systemctl disable KlipperScreen.service
+sudo systemctl stop klipper-screen.service
+sudo systemctl disable klipper-screen.service
 
 echo "* Removing unit file"
-sudo rm /etc/systemd/system/KlipperScreen.service
+sudo rm /etc/systemd/system/klipper-screen.service
 sudo systemctl daemon-reload
 sudo systemctl reset-failed
 
 echo "* Removing environment"
-sudo rm -rf ~/.KlipperScreen-env
+sudo rm -rf ~/.klipper_screen_env
 
 echo ""
 echo "* Uninstallation nearly complete. Please run:"
-echo "cd && rm -rf KlipperScreen"
+echo "cd && rm -rf klipper-screen-cnc"
 echo "to remove the source files"
 echo ""
 echo "Done"

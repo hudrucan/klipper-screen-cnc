@@ -23,7 +23,7 @@ KlipperScreen will try to position the probe in the correct place before sendind
 
 ??? info "Search order to select location"
 
-    1. `calibrate_x_position` and `calibrate_y_position` in [KlipperScreen.conf](https://klipperscreen.readthedocs.io/en/latest/Configuration/#printer-options)
+    1. `calibrate_x_position` and `calibrate_y_position` in [klipper_screen.conf](https://klipperscreen.readthedocs.io/en/latest/Configuration/#printer-options)
     Both need to be configured, probe offsets are not applied. This is considered an override
     2. Probe at the [zero reference position of the mesh](https://www.klipper3d.org/Bed_Mesh.html#configuring-the-zero-reference-position)
     3. If `[safe_z_home]` is defined, those values are used. Unless `Z_ENDSTOP_CALIBRATE` is available.

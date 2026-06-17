@@ -25,11 +25,11 @@ Same as in the installation instructions, but select update instead of install
 ## Manual update
 
 ```sh
-cd ~/KlipperScreen
+cd ~/klipper-screen-cnc
 git pull
-source ~/.KlipperScreen-env/bin/activate
-pip --disable-pip-version-check install -r ~/KlipperScreen/scripts/KlipperScreen-requirements.txt
-sudo service KlipperScreen restart
+source ~/.klipper_screen_env/bin/activate
+pip --disable-pip-version-check install -r ~/klipper-screen-cnc/scripts/KlipperScreen-requirements.txt
+sudo service klipper-screen restart
 deactivate
 ```
 

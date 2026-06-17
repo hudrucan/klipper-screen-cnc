@@ -50,5 +50,5 @@ Usually permissions are set with the installer, try to update and then re-run th
 
     ```sh
     systemctl restart NetworkManager.service
-    systemctl restart KlipperScreen.service
+    systemctl restart klipper-screen.service
     ```

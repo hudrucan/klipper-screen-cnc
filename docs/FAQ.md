@@ -8,7 +8,7 @@ The minimum required version of Python is 3.8. This requirement is checked durin
     If you need to use Python 3.7, you can revert KlipperScreen to v0.4.1
     Connect to the printer via SSH and:
     ```sh
-    cd ~/KlipperScreen
+    cd ~/klipper-screen-cnc
     git reset --hard v0.4.1
     ```
 
@@ -20,9 +20,9 @@ KlipperScreen is not designed to work with OctoPrint, and there are no plans to 
 
 Yes, you can use KlipperScreen as a desktop application. During installation, do not install it as a service. If you have already installed it as a service, you can disable it by running:
 ```sh
-sudo systemctl disable KlipperScreen
+sudo systemctl disable klipper-screen
 ```
-Then, you can open the application via the menu when needed. You can also find the shortcut in `KlipperScreen/scripts/KlipperScreen.desktop`.
+Then, you can open the application via the menu when needed. You can also find the shortcut in `klipper-screen-cnc/scripts/KlipperScreen.desktop`.
 
 ## Why did the title bar turn red and display CPU and RAM usage?
 

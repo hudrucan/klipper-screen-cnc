@@ -546,7 +546,7 @@ class KlipperScreen(Gtk.Window):
         version = Gtk.Label(label=f"{functions.get_software_version()}", halign=Gtk.Align.END)
 
         if not help_msg:
-            help_msg = _("Provide KlipperScreen.log when asking for help.\n")
+            help_msg = _("Provide klipper_screen.log when asking for help.\n")
         message = Gtk.Label(
             label=f"{description}\n\n{help_msg}", wrap=True, wrap_mode=Pango.WrapMode.CHAR
         )
@@ -571,7 +571,7 @@ class KlipperScreen(Gtk.Window):
         logging.debug(f"Restarting {sys.executable} {' '.join(sys.argv)}")
         os.execv(sys.executable, ["python"] + sys.argv)
         # noinspection PyUnreachableCode
-        self._ws.send_method("machine.services.restart", {"service": "KlipperScreen"})  # Fallback
+        self._ws.send_method("machine.services.restart", {"service": "klipper-screen"})  # Fallback
 
     def setup_gtk_settings(self):
         settings = Gtk.Settings.get_default()
@@ -1414,7 +1414,7 @@ def main():
         "--configfile",
         default="",
         metavar="<configfile>",
-        help="Location of KlipperScreen configuration file",
+        help="Location of klipper_screen configuration file",
     )
     logdir = os.path.join(homedir, "printer_data", "logs")
     if not os.path.exists(logdir):
@@ -1422,9 +1422,9 @@ def main():
     parser.add_argument(
         "-l",
         "--logfile",
-        default=os.path.join(logdir, "KlipperScreen.log"),
+        default=os.path.join(logdir, "klipper_screen.log"),
         metavar="<logfile>",
-        help="Location of KlipperScreen logfile output",
+        help="Location of klipper_screen logfile output",
     )
     parser.add_argument(
         "-m",

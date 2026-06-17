@@ -67,5 +67,5 @@ ls /usr/share/X11/xorg.conf.d/
     Save the file, restart KlipperScreen.
 
     ```sh
-    sudo service KlipperScreen restart
+    sudo service klipper-screen restart
     ```

@@ -17,8 +17,8 @@ fi
 # Send script to daemon process so that it does not fail when tty closes.
 #    
 
-export PYKLIPPERSCREEN=~/.KlipperScreen-env/bin/python
-export PYKLIPPERSCREENPARAM=~/KlipperScreen/screen.py
+export PYKLIPPERSCREEN=~/.klipper_screen_env/bin/python
+export PYKLIPPERSCREENPARAM=~/klipper-screen-cnc/screen.py
 
 
 if [ -f $PYKLIPPERSCREEN ]; then
@@ -40,7 +40,7 @@ case "$1" in
 		;;
 	stop)
 		echo -n "Stopping Klipper Screen Xclient Daemon .... "
-		PID=`ps -ef|grep KlipperScreen-env/bin/python|awk '{print $2}'`
+		PID=`ps -ef|grep '\.klipper_screen_env/bin/python'|awk '{print $2}'`
 		kill -9 $PID 
 		echo "stopping"
 	    	;;
@@ -49,5 +49,3 @@ case "$1" in
             	exit 1
              	;;
 esac
-
-
