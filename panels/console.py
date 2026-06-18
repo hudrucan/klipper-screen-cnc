@@ -21,9 +21,21 @@ COLORS = {
 
 class Panel(ScreenPanel):
     def __init__(self, screen, title):
-        title = title or _("Console")
+        title = title or "MDI"
         super().__init__(screen, title)
         self.autoscroll = True
+        self.command_history = []
+        self.history_position = 0
+
+        self.labels["state"] = self._status_label("OFFLINE")
+        self.labels["mode"] = self._status_label("G54 · G90 · G21")
+        self.labels["homed"] = self._status_label("Homed: none")
+
+        status = Gtk.Grid(column_homogeneous=True)
+        status.set_column_spacing(8)
+        status.attach(self.labels["state"], 0, 0, 1, 1)
+        status.attach(self.labels["mode"], 1, 0, 1, 1)
+        status.attach(self.labels["homed"], 2, 0, 1, 1)
 
         o1_button = self._gtk.Button(
             "arrow-down", _("Auto-scroll") + " ", None, self.bts, Gtk.PositionType.RIGHT, 1
@@ -57,28 +69,57 @@ class Panel(ScreenPanel):
         entry = Gtk.Entry(hexpand=True, vexpand=False)
         entry.connect("button-press-event", self._screen.show_keyboard)
         entry.connect("touch-event", self._screen.show_keyboard)
-        entry.connect("button-press-event", self._screen.show_keyboard)
         entry.connect("activate", self._send_command)
+        entry.set_placeholder_text("Enter one MDI command")
         entry.grab_focus_without_selecting()
 
-        enter = self._gtk.Button(
+        previous = self._gtk.Button("arrow-up", scale=0.55)
+        previous.get_style_context().add_class("buttons_slim")
+        previous.set_hexpand(False)
+        previous.set_tooltip_text("Previous MDI command")
+        previous.connect("clicked", self.history_previous)
+
+        next_command = self._gtk.Button("arrow-down", scale=0.55)
+        next_command.get_style_context().add_class("buttons_slim")
+        next_command.set_hexpand(False)
+        next_command.set_tooltip_text("Next MDI command")
+        next_command.connect("clicked", self.history_next)
+
+        send = self._gtk.Button(
             "resume", " " + _("Send") + " ", None, 0.66, Gtk.PositionType.RIGHT, 1
         )
-        enter.get_style_context().add_class("buttons_slim")
+        send.get_style_context().add_class("buttons_slim")
 
-        enter.set_hexpand(False)
-        enter.connect("clicked", self._send_command)
+        send.set_hexpand(False)
+        send.connect("clicked", self._send_command)
 
+        ebox.add(previous)
+        ebox.add(next_command)
         ebox.add(entry)
-        ebox.add(enter)
+        ebox.add(send)
 
-        self.labels.update({"entry": entry, "sw": sw, "tb": tb, "tv": tv})
+        self.labels.update(
+            {
+                "entry": entry,
+                "send": send,
+                "sw": sw,
+                "tb": tb,
+                "tv": tv,
+            }
+        )
 
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        content_box.pack_start(status, False, False, 0)
         content_box.pack_start(options, False, False, 5)
         content_box.add(sw)
         content_box.pack_end(ebox, False, False, 0)
         self.content.add(content_box)
+
+    @staticmethod
+    def _status_label(text):
+        label = Gtk.Label(label=text)
+        label.get_style_context().add_class("cnc-status")
+        return label
 
     def clear(self, widget=None):
         self.labels["tb"].set_text("")
@@ -123,6 +164,8 @@ class Panel(ScreenPanel):
     def process_update(self, action, data):
         if action == "notify_gcode_response":
             self.add_gcode("response", time.time(), data)
+        elif action == "notify_status_update":
+            self.update_machine_state()
 
     def set_autoscroll(self, widget):
         self.autoscroll ^= True
@@ -141,13 +184,69 @@ class Panel(ScreenPanel):
             adj.set_value(adj.get_upper() - adj.get_page_size())
 
     def _send_command(self, *args):
-        cmd = self.labels["entry"].get_text()
+        cmd = self.labels["entry"].get_text().strip()
+        if not cmd:
+            return
+        if not self.mdi_available():
+            self._screen.show_popup_message("MDI is unavailable in the current machine state", 2)
+            return
+
         self.labels["entry"].set_text("")
         self._screen.remove_keyboard()
 
+        self.remember_command(cmd)
+        self.history_position = len(self.command_history)
         self.add_gcode("command", time.time(), cmd)
         self._screen._ws.api.gcode_script(cmd)
 
     def activate(self):
         self.clear()
+        self.update_machine_state()
         self._screen._ws.send_method("server.gcode_store", {"count": 100}, self.gcode_response)
+
+    def remember_command(self, command):
+        command = command.strip()
+        if not command:
+            return
+        if not self.command_history or self.command_history[-1] != command:
+            self.command_history.append(command)
+        self.command_history = self.command_history[-50:]
+
+    def history_previous(self, widget=None):
+        if not self.command_history:
+            return
+        self.history_position = max(0, self.history_position - 1)
+        self.labels["entry"].set_text(self.command_history[self.history_position])
+        self.labels["entry"].set_position(-1)
+
+    def history_next(self, widget=None):
+        if not self.command_history:
+            return
+        self.history_position = min(len(self.command_history), self.history_position + 1)
+        command = (
+            self.command_history[self.history_position]
+            if self.history_position < len(self.command_history)
+            else ""
+        )
+        self.labels["entry"].set_text(command)
+        self.labels["entry"].set_position(-1)
+
+    def mdi_available(self):
+        return self._printer.state in {"ready", "paused"}
+
+    def update_machine_state(self):
+        state = self._printer.state or "offline"
+        absolute = self._printer.get_stat("gcode_move", "absolute_coordinates")
+        homed_axes = self._printer.get_stat("toolhead", "homed_axes") or ""
+        wcs = self._printer.get_stat("work_coordinate_systems") or {}
+        active_wcs = "G53" if wcs.get("machine_mode") else wcs.get("active_wcs", "G54")
+
+        self.labels["state"].set_label(state.upper())
+        self.labels["mode"].set_label(
+            f"{active_wcs} · {'G90' if absolute else 'G91'} · G21"
+        )
+        self.labels["homed"].set_label(f"Homed: {homed_axes.upper() or 'none'}")
+
+        available = self.mdi_available()
+        self.labels["entry"].set_sensitive(available)
+        self.labels["send"].set_sensitive(available)
