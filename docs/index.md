@@ -1,12 +1,13 @@
 # Klipper Screen CNC
 
-This documentation is intentionally minimal while the project is being refit from a 3D-printer touchscreen interface into a CNC-focused Klipper screen.
+This documentation is intentionally compact while the project is being refit from a
+3D-printer touchscreen interface into a CNC-focused Klipper screen.
 
-The old upstream documentation was removed because most of it described printer-specific workflows such as filament handling, bed mesh, extrusion, and print tuning. New CNC documentation will be written as the interface settles.
+Start with:
 
-## Current Focus
+- [Installation](installation.md)
+- [CNC controls](controls.md)
+- [Migration from upstream KlipperScreen](migration.md)
 
-- Debloat 3D-printer-specific UI and configuration.
-- Keep core Moonraker/Klipper connectivity stable.
-- Build CNC-first workflows for jog, DRO, macros, MDI, status, files, spindle, and coolant.
-
+Current CNC workflows include jog, DRO, WCS, MDI, macros, files, spindle control,
+machine status, job status, and Motion Override.

@@ -1,0 +1,66 @@
+# Installation
+
+Klipper Screen CNC is intended to replace upstream KlipperScreen on the target display.
+Do not run both interfaces at the same time.
+
+## Remove the old runtime
+
+Stop the upstream service and preserve its files as backups:
+
+```sh
+sudo systemctl disable --now KlipperScreen.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/KlipperScreen.service
+sudo systemctl daemon-reload
+
+mv ~/KlipperScreen ~/KlipperScreen.backup 2>/dev/null || true
+mv ~/.KlipperScreen-env ~/.KlipperScreen-env.backup 2>/dev/null || true
+mv ~/.config/KlipperScreen ~/.config/KlipperScreen.backup 2>/dev/null || true
+mv ~/printer_data/config/KlipperScreen.conf \
+  ~/printer_data/config/KlipperScreen.conf.backup 2>/dev/null || true
+rm -f ~/.local/share/applications/KlipperScreen.desktop
+```
+
+Some installations use a lowercase unit name. Check for another active screen service:
+
+```sh
+systemctl list-unit-files | grep -Ei 'klipper.?screen'
+```
+
+Disable any old unit that still launches `~/KlipperScreen/screen.py`. Do not remove
+Moonraker or Klipper.
+
+## Install the fork
+
+```sh
+git clone https://github.com/hudrucan/klipper-screen-cnc.git
+cd klipper-screen-cnc
+./scripts/KlipperScreen-install.sh
+sudo systemctl restart klipper-screen
+```
+
+Runtime locations:
+
+- Source: `~/klipper-screen-cnc`
+- Service: `klipper-screen.service`
+- Virtual environment: `~/.klipper-screen-env`
+- User config: `~/printer_data/config/klipper_screen.conf` or
+  `~/.config/klipper_screen/klipper_screen.conf`
+- Log: `~/printer_data/logs/klipper_screen.log`, falling back to
+  `/tmp/klipper_screen.log`
+
+## Update
+
+```sh
+cd ~/klipper-screen-cnc
+git pull --ff-only
+sudo systemctl restart klipper-screen
+```
+
+## Verify
+
+```sh
+systemctl status klipper-screen --no-pager
+journalctl -u klipper-screen -n 100 --no-pager
+```
+
+Only one Klipper Screen process should own the display.

@@ -9,6 +9,7 @@ This fork removes most 3D-printer-specific UI and replaces it with a compact CNC
 - Interactive WCS selection and XY map
 - MDI and G-code macro access
 - Spindle clockwise, counter-clockwise, and stop controls
+- Motion Override control using Klipper's native `M220`
 - CNC-oriented run status, progress, pause, resume, restart, and cancel
 - Limits, network, system, and shutdown controls
 
@@ -28,6 +29,24 @@ Spindle controls are shown when Klipper exposes the `M3` and `M5` commands and a
 
 ## Install
 
+Remove or disable an existing upstream KlipperScreen installation first. Running both
+services can open two interfaces on the same display and cause confusing restart or
+configuration behavior.
+
+```bash
+sudo systemctl disable --now KlipperScreen.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/KlipperScreen.service
+sudo systemctl daemon-reload
+mv ~/KlipperScreen ~/KlipperScreen.backup 2>/dev/null || true
+mv ~/.KlipperScreen-env ~/.KlipperScreen-env.backup 2>/dev/null || true
+mv ~/.config/KlipperScreen ~/.config/KlipperScreen.backup 2>/dev/null || true
+mv ~/printer_data/config/KlipperScreen.conf \
+  ~/printer_data/config/KlipperScreen.conf.backup 2>/dev/null || true
+rm -f ~/.local/share/applications/KlipperScreen.desktop
+```
+
+Keep the old config as a reference, then install the fork:
+
 ```bash
 git clone https://github.com/hudrucan/klipper-screen-cnc.git
 cd klipper-screen-cnc
@@ -35,7 +54,11 @@ cd klipper-screen-cnc
 sudo systemctl restart klipper-screen
 ```
 
-The installer creates `klipper-screen.service` and uses `~/.klipper-screen-env` for the Python virtual environment by default.
+The installer creates `klipper-screen.service` and uses `~/.klipper-screen-env` for
+the Python virtual environment by default.
+
+See the quick [installation](docs/installation.md), [controls](docs/controls.md), and
+[migration](docs/migration.md) notes for configuration and troubleshooting.
 
 ## Sonic Pad Debian
 

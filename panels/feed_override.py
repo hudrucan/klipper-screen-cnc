@@ -11,12 +11,9 @@ class Panel(ScreenPanel):
     maximum = 150
 
     def __init__(self, screen, title):
-        super().__init__(screen, title or "Feed Override")
+        super().__init__(screen, title or "Motion Override")
         self.value = 100
         self.buttons = {}
-
-        heading = Gtk.Label(label="MOTION OVERRIDE")
-        heading.get_style_context().add_class("cnc-status-heading")
 
         self.labels["value"] = Gtk.Label(label="100%")
         self.labels["value"].get_style_context().add_class("cnc-override-value")
@@ -51,7 +48,6 @@ class Panel(ScreenPanel):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content.set_halign(Gtk.Align.FILL)
         content.set_valign(Gtk.Align.FILL)
-        content.pack_start(heading, False, False, 0)
         content.pack_start(self.labels["value"], True, True, 0)
         content.pack_start(adjust, False, False, 0)
         content.pack_start(self.buttons["reset"], False, False, 0)

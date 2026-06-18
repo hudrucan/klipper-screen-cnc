@@ -2,8 +2,10 @@ site_name: Klipper Screen CNC
 site_description: CNC-focused touchscreen UI for Klipper.
 nav:
     - Home: index.md
-    - Development: development.md
+    - Installation: installation.md
+    - CNC Controls: controls.md
     - Migration Notes: migration.md
+    - Development: development.md
 theme:
   name: material
   language: en
