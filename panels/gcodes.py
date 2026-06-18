@@ -193,10 +193,21 @@ class Panel(ScreenPanel):
                 delete.connect("clicked", self.confirm_delete_file, f"gcodes/{path}")
                 rename.connect("clicked", self.show_rename, f"gcodes/{path}")
                 action_icon = "printer" if self._printer.extrudercount > 0 else "load"
-                action = self._gtk.Button(action_icon, style="color3")
+                action = Gtk.Button(
+                    hexpand=False,
+                    vexpand=False,
+                    can_focus=False,
+                    always_show_image=True,
+                )
+                action.get_style_context().add_class("color3")
+                action.set_image(
+                    self._gtk.Image(
+                        action_icon,
+                        self.list_button_size,
+                        self.list_button_size,
+                    )
+                )
                 action.connect("clicked", self.confirm_print, path)
-                action.set_hexpand(False)
-                action.set_vexpand(False)
                 action.set_halign(Gtk.Align.END)
                 if self._screen.width >= 400:
                     row.attach(action, 4, 0, 1, 2)
@@ -337,7 +348,7 @@ class Panel(ScreenPanel):
     def sort_dates(a: PrintListItem, b: PrintListItem, reverse):
         if a.get_is_dir() - b.get_is_dir() != 0:
             return a.get_is_dir() - b.get_is_dir()
-        return b.get_date() - a.get_date() if reverse else a.get_date() - b.get_date()
+        return a.get_date() - b.get_date() if reverse else b.get_date() - a.get_date()
 
     def confirm_print(self, widget, filename):
         action = _("Print") if self._printer.extrudercount > 0 else _("Start")
