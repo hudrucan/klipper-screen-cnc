@@ -51,6 +51,13 @@ class Panel(ScreenPanel):
             self.labels[name].set_ellipsize(3)
             self.labels[name].get_style_context().add_class("cnc-status-value")
             card.pack_start(self.labels[name], True, True, 0)
+            if name == "feed_override":
+                event_box = Gtk.EventBox()
+                event_box.set_visible_window(False)
+                event_box.add(card)
+                event_box.connect("button-press-event", self.open_feed_override)
+                self.labels["metric_feed_override"] = event_box
+                card = event_box
             grid.attach(card, index % columns, index // columns, 1, 1)
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -92,3 +99,7 @@ class Panel(ScreenPanel):
         self.labels["max_velocity"].set_label(f"{max_velocity:.1f} mm/s")
         self.labels["host_load"].set_label(f"{sysload:.2f}")
         self.labels["free_ram"].set_label(f"{free_ram:.0f} MB")
+
+    def open_feed_override(self, widget=None, event=None):
+        self._screen.show_panel("feed_override")
+        return True

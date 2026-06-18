@@ -1164,6 +1164,9 @@ class KlipperScreen(Gtk.Window):
             logging.error("Error getting available gcode commands")
             return
         self.printer.available_commands = data["result"]
+        if self._cur_panels and self._cur_panels[-1] == "main_menu":
+            self.panels["main_menu"].activate()
+            self.show_all()
 
     def set_system_info(self, data, method, params):
         if "error" in data:

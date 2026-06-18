@@ -637,6 +637,17 @@ trough {
     font-weight: bold;
 }
 
+.cnc-override-value {
+    font-family: monospace;
+    font-size: 4em;
+    font-weight: bold;
+}
+
+.cnc-override-note {
+    font-size: 0.8em;
+    opacity: 0.65;
+}
+
 .cnc-run-hero {
     padding: 0.45em 0.7em;
     border: 1px solid alpha(@text, 0.14);

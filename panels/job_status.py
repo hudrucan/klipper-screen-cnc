@@ -79,6 +79,9 @@ class Panel(ScreenPanel):
             self.labels["metric_spindle"].connect(
                 "button-press-event", self.open_spindle
             )
+        self.labels["metric_override"].connect(
+            "button-press-event", self.open_feed_override
+        )
 
         body = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
         body.set_column_spacing(10)
@@ -188,6 +191,10 @@ class Panel(ScreenPanel):
     def open_spindle(self, widget=None, event=None):
         if self.has_spindle():
             self._screen.show_panel("spindle")
+        return True
+
+    def open_feed_override(self, widget=None, event=None):
+        self._screen.show_panel("feed_override")
         return True
 
     def activate(self):
