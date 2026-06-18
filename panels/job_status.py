@@ -176,6 +176,13 @@ class Panel(ScreenPanel):
             "elapsed": self._gtk.Button("clock", "-", None, self.bts, Gtk.PositionType.LEFT, 1),
             "left": self._gtk.Button("hourglass", "-", None, self.bts, Gtk.PositionType.LEFT, 1),
         }
+        if self.has_spindle():
+            buttons["spindle"] = self._gtk.Button(
+                "fan-on", "Spindle OFF", None, self.bts, Gtk.PositionType.LEFT, 1
+            )
+            buttons["spindle"].connect(
+                "clicked", self.menu_item_clicked, {"panel": "spindle"}
+            )
         for button in buttons:
             buttons[button].set_halign(Gtk.Align.START)
         buttons["fan"].connect("clicked", self.menu_item_clicked, {"panel": "fan"})
@@ -262,10 +269,14 @@ class Panel(ScreenPanel):
         szfe = Gtk.Grid(column_homogeneous=True)
         szfe.attach(self.buttons["speed"], 0, 0, 3, 1)
         szfe.attach(self.buttons["z"], 2, 0, 2, 1)
+        secondary_row = 1
+        if "spindle" in self.buttons:
+            szfe.attach(self.buttons["spindle"], 0, 1, 4, 1)
+            secondary_row = 2
         if self._printer.get_tools():
-            szfe.attach(self.buttons["extrusion"], 0, 1, 3, 1)
+            szfe.attach(self.buttons["extrusion"], 0, secondary_row, 3, 1)
         if self._printer.get_fans():
-            szfe.attach(self.buttons["fan"], 2, 1, 2, 1)
+            szfe.attach(self.buttons["fan"], 2, secondary_row, 2, 1)
 
         info = Gtk.Grid(row_homogeneous=True)
         info.get_style_context().add_class("printing-info")
@@ -296,6 +307,13 @@ class Panel(ScreenPanel):
         info.attach(self.labels["filament_total"], 2, 4, 1, 1)
         self.extrusion_grid = info
         self.buttons["extrusion"].connect("clicked", self.switch_info, self.extrusion_grid)
+
+    def has_spindle(self):
+        return (
+            "M3" in self._printer.available_commands
+            and "M5" in self._printer.available_commands
+            and "output_pin spindle" in self._printer.get_output_pins()
+        )
 
     def create_move_grid(self, widget=None):
         goback = self._gtk.Button("back", None, "color2", self.bts, Gtk.PositionType.TOP, False)
@@ -651,6 +669,18 @@ class Panel(ScreenPanel):
             fan_label += f" {self.fans[fan]['name']}{self.fans[fan]['speed']}"
         if fan_label:
             self.buttons["fan"].set_label(fan_label[:12])
+        if "spindle" in self.buttons:
+            spindle_on = (
+                float(self._printer.get_stat("output_pin spindle", "value") or 0) > 0
+            )
+            self.buttons["spindle"].set_label(
+                f"Spindle {'ON' if spindle_on else 'OFF'}"
+            )
+            context = self.buttons["spindle"].get_style_context()
+            if spindle_on:
+                context.add_class("button_active")
+            else:
+                context.remove_class("button_active")
         if "print_stats" in data:
             if "state" in data["print_stats"]:
                 self.set_state(

@@ -604,6 +604,39 @@ trough {
     font-size: 0.9em;
 }
 
+.cnc-spindle-state {
+    font-family: monospace;
+    font-size: 3em;
+    font-weight: bold;
+    color: @lines;
+}
+
+.cnc-spindle-running {
+    color: @color4;
+}
+
+.cnc-spindle-source {
+    opacity: 0.6;
+}
+
+.cnc-status-card {
+    padding: 0.65em 0.8em;
+    border: 1px solid alpha(@text, 0.16);
+    background-color: alpha(@text, 0.025);
+}
+
+.cnc-status-heading {
+    font-size: 0.7em;
+    font-weight: bold;
+    opacity: 0.6;
+}
+
+.cnc-status-value {
+    font-family: monospace;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
 .printing-status-label {
     padding-top: .25em;
     padding-bottom: .15em;

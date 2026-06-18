@@ -342,6 +342,7 @@ class KlipperScreen(Gtk.Window):
                 "virtual_sdcard": ["file_position", "is_active", "progress"],
                 "webhooks": ["state", "state_message"],
                 "motion_report": ["live_position", "live_velocity"],
+                "system_stats": ["sysload", "memavail"],
             }
         }
         if "work_coordinate_systems" in self.printer.get_config_section_list():
