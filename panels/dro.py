@@ -17,27 +17,35 @@ class Panel(ScreenPanel):
         self.labels["velocity"] = self._status_label("0.00 mm/s")
         self.labels["homed"] = self._status_label("Homed: none")
 
-        status = Gtk.Box(spacing=8, hexpand=True)
-        for name in ("wcs", "mode", "velocity", "homed"):
-            status.pack_start(self.labels[name], True, True, 0)
+        status = Gtk.Grid(column_homogeneous=True, hexpand=True)
+        status.set_column_spacing(8)
+        status.set_row_spacing(8)
+        for index, name in enumerate(("wcs", "mode", "velocity", "homed")):
+            status.attach(self.labels[name], index % 2, index // 2, 1, 1)
 
         grid = Gtk.Grid(column_homogeneous=True, hexpand=True, vexpand=True)
         grid.set_column_spacing(8)
-        grid.set_row_spacing(8)
-        for column, heading in enumerate(("", "Machine", "Work", "Offset", "Limits")):
+        grid.set_row_spacing(4)
+        for column, heading in enumerate(("", "Machine", "Work", "Offset")):
             label = Gtk.Label(label=heading)
             label.get_style_context().add_class("cnc-dro-heading")
             grid.attach(label, column, 0, 1, 1)
 
-        for row, axis in enumerate(self.axes, start=1):
+        for index, axis in enumerate(self.axes):
+            row = index * 2 + 1
             self.labels[f"axis_{axis}"] = Gtk.Label(label=axis)
             self.labels[f"axis_{axis}"].get_style_context().add_class("cnc-dro-axis")
             grid.attach(self.labels[f"axis_{axis}"], 0, row, 1, 1)
 
-            for column, field in enumerate(("machine", "work", "offset", "limits"), start=1):
+            for column, field in enumerate(("machine", "work", "offset"), start=1):
                 self.labels[f"{field}_{axis}"] = Gtk.Label(label="--")
                 self.labels[f"{field}_{axis}"].get_style_context().add_class("cnc-dro-value")
                 grid.attach(self.labels[f"{field}_{axis}"], column, row, 1, 1)
+
+            self.labels[f"limits_{axis}"] = Gtk.Label(label="Travel --")
+            self.labels[f"limits_{axis}"].set_halign(Gtk.Align.START)
+            self.labels[f"limits_{axis}"].get_style_context().add_class("cnc-dro-limits")
+            grid.attach(self.labels[f"limits_{axis}"], 1, row + 1, 3, 1)
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content.pack_start(status, False, False, 0)
@@ -90,6 +98,6 @@ class Panel(ScreenPanel):
             self.labels[f"work_{axis}"].set_label(f"{work_position:.{digits}f}")
             self.labels[f"offset_{axis}"].set_label(f"{offset:+.{digits}f}")
             self.labels[f"limits_{axis}"].set_label(
-                f"{self._position(minimum, index):.{digits}f} .. "
+                f"Travel {self._position(minimum, index):.{digits}f} .. "
                 f"{self._position(maximum, index):.{digits}f}"
             )
