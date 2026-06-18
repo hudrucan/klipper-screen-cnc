@@ -26,7 +26,7 @@ class Panel(ScreenPanel):
     def __init__(self, screen, title):
         title = title or (_("Print") if self._printer.extrudercount > 0 else _("Gcodes"))
         super().__init__(screen, title)
-        sortdir = self._config.get_main_config().get("print_sort_dir", "name_asc")
+        sortdir = self._config.get_main_config().get("print_sort_dir", "date_desc")
         sortdir = sortdir.split("_")
         self.sort_items = {
             "name": _("Name"),
@@ -81,7 +81,7 @@ class Panel(ScreenPanel):
         self.flowbox = Gtk.FlowBox(
             selection_mode=Gtk.SelectionMode.NONE, column_spacing=0, row_spacing=0
         )
-        list_mode = self._config.get_main_config().get("print_view", "thumbs")
+        list_mode = self._config.get_main_config().get("print_view", "list")
         logging.info(list_mode)
         self.list_mode = list_mode == "list"
         if self.list_mode:
@@ -189,7 +189,7 @@ class Panel(ScreenPanel):
             row.attach(delete, 3, 1, 1, 1)
             if is_file:
                 icon.connect("clicked", self.confirm_print, path)
-                self.image_load(path, icon, self.thumbsize / 2, True, "file")
+                self.image_load(None, icon, self.thumbsize / 2, True, "file")
                 delete.connect("clicked", self.confirm_delete_file, f"gcodes/{path}")
                 rename.connect("clicked", self.show_rename, f"gcodes/{path}")
                 action_icon = "printer" if self._printer.extrudercount > 0 else "load"

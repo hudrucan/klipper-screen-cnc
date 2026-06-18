@@ -543,8 +543,8 @@ class KlipperScreenConfig:
                     "value": "10",
                 }
             },
-            {"print_sort_dir": {"section": "main", "type": None, "value": "name_asc"}},
-            {"print_view": {"section": "main", "type": None, "value": "thumbs"}},
+            {"print_sort_dir": {"section": "main", "type": None, "value": "date_desc"}},
+            {"print_view": {"section": "main", "type": None, "value": "list"}},
             {
                 "language": {
                     "section": "main",
