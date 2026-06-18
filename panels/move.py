@@ -81,11 +81,16 @@ class Panel(ScreenPanel):
         if self._config.get_config()["main"].getboolean("invert_z", False):
             zm, zp = zp, zm
 
-        scale = self._gtk.img_scale * self._gtk.button_image_scale
+        scale = self._gtk.img_scale * self._gtk.button_image_scale * 0.62
         self.buttons[xm].set_image(self._gtk.Image("arrow-left", scale, scale))
         self.buttons[yp].set_image(self._gtk.Image("arrow-up", scale, scale))
         self.buttons[xp].set_image(self._gtk.Image("arrow-right", scale, scale))
         self.buttons[ym].set_image(self._gtk.Image("arrow-down", scale, scale))
+        self.buttons[zm].set_image(self._gtk.Image("z-closer", scale, scale))
+        self.buttons[zp].set_image(self._gtk.Image("z-farther", scale, scale))
+        self.buttons["home"].set_image(self._gtk.Image("home", scale, scale))
+        self.buttons["motors_off"].set_image(self._gtk.Image("motor-off", scale, scale))
+        adjust.set_image(self._gtk.Image("settings", scale, scale))
 
         for name in ("x+", "x-", "y+", "y-", "z+", "z-"):
             self.buttons[name].get_style_context().add_class("cnc-jog-button")
@@ -145,10 +150,10 @@ class Panel(ScreenPanel):
         for p in ("pos_x", "pos_y", "pos_z"):
             self.labels[p] = self._gtk.Button()
             self.labels[p].set_hexpand(False)
-            self.labels[p].set_vexpand(True)
+            self.labels[p].set_vexpand(False)
             self.labels[p].connect("clicked", self.menu_item_clicked, {"panel": "dro"})
             self.labels[p].get_style_context().add_class("no-margin")
-        self.labels["move_dist"] = Gtk.Label(label=_("Move Distance (mm)"))
+        self.labels["move_dist"] = Gtk.Label(label=_("Jog Step (mm)"))
         self.labels["jog_status"] = Gtk.Label(label="WCS --")
         self.labels["jog_status"].get_style_context().add_class("cnc-status")
 
@@ -159,8 +164,8 @@ class Panel(ScreenPanel):
         bottomgrid.attach(self.labels["pos_x"], 0, 0, 1, 1)
         bottomgrid.attach(self.labels["pos_y"], 1, 0, 1, 1)
         bottomgrid.attach(self.labels["pos_z"], 2, 0, 1, 1)
-        bottomgrid.attach(self.labels["move_dist"], 0, 1, 3, 1)
-        bottomgrid.attach(self.labels["jog_status"], 0, 2, 3, 1)
+        bottomgrid.attach(self.labels["move_dist"], 0, 1, 1, 1)
+        bottomgrid.attach(self.labels["jog_status"], 1, 1, 2, 1)
 
         footer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
         footer.set_vexpand(False)

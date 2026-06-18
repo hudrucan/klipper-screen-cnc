@@ -531,10 +531,10 @@ trough {
 }
 
 .cnc-jog-button {
-    min-width: 2.7em;
-    min-height: 2.7em;
+    min-width: 2.4em;
+    min-height: 2.4em;
     margin: 0.05em;
-    padding: 0.2em;
+    padding: 0.1em;
 }
 
 .cnc-jog-center {

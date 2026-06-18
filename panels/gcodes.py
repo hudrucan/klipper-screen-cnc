@@ -349,7 +349,11 @@ class Panel(ScreenPanel):
     def sort_dates(a: PrintListItem, b: PrintListItem, reverse):
         if a.get_is_dir() - b.get_is_dir() != 0:
             return a.get_is_dir() - b.get_is_dir()
-        return a.get_date() - b.get_date() if reverse else b.get_date() - a.get_date()
+        if a.get_date() == b.get_date():
+            return 0
+        if reverse:
+            return -1 if a.get_date() > b.get_date() else 1
+        return -1 if a.get_date() < b.get_date() else 1
 
     def confirm_print(self, widget, filename):
         action = _("Print") if self._printer.extrudercount > 0 else _("Start")
