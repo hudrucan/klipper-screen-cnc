@@ -1,7 +1,9 @@
+import logging
+
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk
 
 from ks_includes.screen_panel import ScreenPanel
 
@@ -21,9 +23,10 @@ class MachineMap(Gtk.DrawingArea):
         self.set_hexpand(True)
         self.set_vexpand(True)
         self.set_size_request(280, 280)
-        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.connect("draw", self.draw_map)
-        self.connect("button-release-event", self.on_release)
+        self.gesture = Gtk.GestureMultiPress.new(self)
+        self.gesture.set_button(1)
+        self.gesture.connect("released", self.on_tap)
 
     def update_state(self, minimum, maximum, tool, offsets, active_wcs):
         self.minimum = self._xy(minimum, self.minimum)
@@ -77,17 +80,24 @@ class MachineMap(Gtk.DrawingArea):
             y = min(max(y, self.minimum[1]), self.maximum[1])
         return x, y
 
-    def on_release(self, widget, event):
-        if event.button != 1:
-            return False
+    def on_tap(self, gesture, presses, event_x, event_y):
+        if presses != 1:
+            return
         left, top, plot_width, plot_height, _ = self._plot()
         if not (
-            left <= event.x <= left + plot_width
-            and top <= event.y <= top + plot_height
+            left <= event_x <= left + plot_width
+            and top <= event_y <= top + plot_height
         ):
-            return False
-        self.panel.move_to_machine_xy(*self.to_machine(event.x, event.y))
-        return True
+            return
+        machine_x, machine_y = self.to_machine(event_x, event_y)
+        logging.info(
+            "WCS map tap: screen=(%.1f, %.1f) machine=(%.3f, %.3f)",
+            event_x,
+            event_y,
+            machine_x,
+            machine_y,
+        )
+        self.panel.move_to_machine_xy(machine_x, machine_y)
 
     def draw_map(self, widget, ctx):
         left, top, plot_width, plot_height, scale = self._plot()
@@ -348,6 +358,15 @@ class Panel(ScreenPanel):
             "G90\n"
             f"G1 X{target_x:.4f} Y{target_y:.4f} F{feedrate}\n"
             "RESTORE_GCODE_STATE NAME=_ks_cnc_map_move"
+        )
+        logging.info(
+            "WCS map move: mode=%s machine=(%.3f, %.3f) target=(%.3f, %.3f) feed=%d",
+            "G53" if state.get("machine_mode") else active,
+            machine_x,
+            machine_y,
+            target_x,
+            target_y,
+            feedrate,
         )
         self._screen._send_action(None, "printer.gcode.script", {"script": script})
 
