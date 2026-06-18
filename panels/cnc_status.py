@@ -32,11 +32,15 @@ class Panel(ScreenPanel):
         chips.attach(self.labels["homed"], 2, 0, 1, 1)
 
         grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
+        grid.set_hexpand(True)
+        grid.set_vexpand(True)
         grid.set_column_spacing(10)
         grid.set_row_spacing(10)
-        columns = 1 if self._screen.vertical_mode else 2
+        columns = 2 if self._screen.vertical_mode else 3
         for index, (name, heading) in enumerate(self.metrics):
             card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            card.set_hexpand(True)
+            card.set_vexpand(True)
             card.get_style_context().add_class("cnc-status-card")
 
             label = Gtk.Label(label=heading, xalign=0)
@@ -49,7 +53,7 @@ class Panel(ScreenPanel):
             card.pack_start(self.labels[name], True, True, 0)
             grid.attach(card, index % columns, index // columns, 1, 1)
 
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.pack_start(chips, False, False, 0)
         content.pack_start(grid, True, True, 0)
         self.content.add(content)

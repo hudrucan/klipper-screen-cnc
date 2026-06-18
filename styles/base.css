@@ -620,9 +620,9 @@ trough {
 }
 
 .cnc-status-card {
-    padding: 0.65em 0.8em;
+    padding: 0.8em 0.9em;
     border: 1px solid alpha(@text, 0.16);
-    background-color: alpha(@text, 0.025);
+    background-color: alpha(@text, 0.035);
 }
 
 .cnc-status-heading {
@@ -633,7 +633,65 @@ trough {
 
 .cnc-status-value {
     font-family: monospace;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.cnc-run-hero {
+    padding: 0.45em 0.7em;
+    border: 1px solid alpha(@text, 0.14);
+    background-color: alpha(@text, 0.025);
+}
+
+.cnc-run-progress-text {
+    font-family: monospace;
+    font-size: 1.35em;
+    font-weight: bold;
+}
+
+.cnc-run-filename {
+    font-family: monospace;
+    font-size: 1.55em;
+    font-weight: bold;
+}
+
+.cnc-run-message {
+    opacity: 0.72;
+}
+
+.cnc-run-state-active {
+    color: @color4;
+}
+
+.cnc-run-position-card,
+.cnc-run-metric-card {
+    padding: 0.55em 0.7em;
+    border: 1px solid alpha(@text, 0.16);
+    background-color: alpha(@text, 0.035);
+}
+
+.cnc-run-axis {
+    font-family: monospace;
+    font-size: 1.15em;
+    font-weight: bold;
+}
+
+.cnc-run-position-value {
+    font-family: monospace;
+    font-size: 1.35em;
+    font-weight: bold;
+}
+
+.cnc-run-work-value {
+    font-family: monospace;
     font-size: 1.1em;
+    font-weight: bold;
+    opacity: 0.82;
+}
+
+.cnc-run-metric-value {
+    font-family: monospace;
+    font-size: 1.05em;
     font-weight: bold;
 }
 
