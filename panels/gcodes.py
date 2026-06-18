@@ -200,11 +200,12 @@ class Panel(ScreenPanel):
                     always_show_image=True,
                 )
                 action.get_style_context().add_class("color3")
+                action.get_style_context().add_class("cnc-file-start")
                 action.set_image(
                     self._gtk.Image(
                         action_icon,
-                        self.list_button_size,
-                        self.list_button_size,
+                        self.list_button_size * 1.3,
+                        self.list_button_size * 1.3,
                     )
                 )
                 action.connect("clicked", self.confirm_print, path)

@@ -549,6 +549,13 @@ trough {
     padding-left: 0.2em;
 }
 
+.cnc-file-start {
+    min-width: 3.2em;
+    min-height: 3.2em;
+    padding: 0.35em;
+    margin: 0.1em;
+}
+
 .cnc-dro-heading {
     font-weight: bold;
     opacity: 0.75;
