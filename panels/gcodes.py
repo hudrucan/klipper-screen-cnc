@@ -328,6 +328,7 @@ class Panel(ScreenPanel):
             self.flowbox.set_sort_func(self.sort_dates, reverse)
         elif self.sort_current[0] == "size":
             self.flowbox.set_sort_func(self.sort_sizes, reverse)
+        self.flowbox.invalidate_sort()
 
     @staticmethod
     def sort_names(a: PrintListItem, b: PrintListItem, reverse):
