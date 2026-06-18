@@ -582,6 +582,28 @@ trough {
     border-top: 1px solid alpha(@text, 0.12);
 }
 
+.cnc-wcs-card {
+    padding: 0.35em;
+    border: 1px solid alpha(@text, 0.16);
+    background-color: alpha(@text, 0.025);
+}
+
+.cnc-wcs-button {
+    min-height: 2.2em;
+    font-weight: bold;
+}
+
+.cnc-wcs-active {
+    background-color: @active;
+    border: 0.2em solid @color4;
+}
+
+.cnc-wcs-offset {
+    padding: 0.2em 0.5em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
 .printing-status-label {
     padding-top: .25em;
     padding-bottom: .15em;
