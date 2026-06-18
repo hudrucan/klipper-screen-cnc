@@ -528,6 +528,7 @@ class Panel(ScreenPanel):
                 fbchild = self.create_item(item)
                 if fbchild is not None:
                     self.flowbox.add(fbchild)
+                    fbchild.show_all()
                     rendered += 1
 
             if first_batch:

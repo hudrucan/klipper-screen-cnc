@@ -87,25 +87,49 @@ class Panel(ScreenPanel):
         self.buttons[xp].set_image(self._gtk.Image("arrow-right", scale, scale))
         self.buttons[ym].set_image(self._gtk.Image("arrow-down", scale, scale))
 
-        grid = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
-        if self._screen.vertical_mode:
-            grid.attach(self.buttons[xm], 0, 1, 1, 1)
-            grid.attach(self.buttons[xp], 2, 1, 1, 1)
-            grid.attach(self.buttons[ym], 1, 1, 1, 1)
-            grid.attach(self.buttons[yp], 1, 0, 1, 1)
-            grid.attach(self.buttons[zm], 0, 2, 1, 1)
-            grid.attach(self.buttons[zp], 2, 2, 1, 1)
-            grid.attach(adjust, 1, 2, 1, 1)
-        else:
-            grid.attach(self.buttons[xm], 0, 1, 1, 1)
-            grid.attach(self.buttons[xp], 2, 1, 1, 1)
-            grid.attach(self.buttons[ym], 1, 1, 1, 1)
-            grid.attach(self.buttons[yp], 1, 0, 1, 1)
-            grid.attach(self.buttons[zm], 3, 1, 1, 1)
-            grid.attach(self.buttons[zp], 3, 0, 1, 1)
+        for name in ("x+", "x-", "y+", "y-", "z+", "z-"):
+            self.buttons[name].get_style_context().add_class("cnc-jog-button")
 
-        grid.attach(self.buttons["home"], 0, 0, 1, 1)
-        grid.attach(self.buttons["motors_off"], 2, 0, 1, 1)
+        xy_center = Gtk.Label(label="XY")
+        xy_center.get_style_context().add_class("cnc-jog-center")
+        xy_pad = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
+        xy_pad.set_row_spacing(4)
+        xy_pad.set_column_spacing(4)
+        xy_pad.get_style_context().add_class("cnc-jog-pad")
+        xy_pad.attach(self.buttons[yp], 1, 0, 1, 1)
+        xy_pad.attach(self.buttons[xm], 0, 1, 1, 1)
+        xy_pad.attach(xy_center, 1, 1, 1, 1)
+        xy_pad.attach(self.buttons[xp], 2, 1, 1, 1)
+        xy_pad.attach(self.buttons[ym], 1, 2, 1, 1)
+
+        z_center = Gtk.Label(label="Z")
+        z_center.get_style_context().add_class("cnc-jog-center")
+        z_pad = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
+        z_pad.set_row_spacing(4)
+        z_pad.get_style_context().add_class("cnc-jog-pad")
+        z_pad.attach(self.buttons[zp], 0, 0, 1, 1)
+        z_pad.attach(z_center, 0, 1, 1, 1)
+        z_pad.attach(self.buttons[zm], 0, 2, 1, 1)
+
+        actions = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
+        actions.set_row_spacing(4)
+        actions.get_style_context().add_class("cnc-jog-actions")
+        actions.attach(self.buttons["home"], 0, 0, 1, 1)
+        actions.attach(self.buttons["motors_off"], 0, 1, 1, 1)
+        actions.attach(adjust, 0, 2, 1, 1)
+
+        jog_area = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
+        jog_area.set_row_spacing(6)
+        jog_area.set_column_spacing(6)
+        jog_area.set_vexpand(True)
+        if self._screen.vertical_mode:
+            jog_area.attach(xy_pad, 0, 0, 2, 2)
+            jog_area.attach(z_pad, 0, 2, 1, 1)
+            jog_area.attach(actions, 1, 2, 1, 1)
+        else:
+            jog_area.attach(xy_pad, 0, 0, 3, 1)
+            jog_area.attach(z_pad, 3, 0, 1, 1)
+            jog_area.attach(actions, 4, 0, 1, 1)
 
         distgrid = Gtk.Grid()
         for j, i in enumerate(self.distances):
@@ -137,13 +161,18 @@ class Panel(ScreenPanel):
         bottomgrid.attach(self.labels["pos_z"], 2, 0, 1, 1)
         bottomgrid.attach(self.labels["move_dist"], 0, 1, 3, 1)
         bottomgrid.attach(self.labels["jog_status"], 0, 2, 3, 1)
-        if not self._screen.vertical_mode:
-            bottomgrid.attach(adjust, 3, 0, 1, 3)
 
-        self.labels["move_menu"] = Gtk.Grid(row_homogeneous=True, column_homogeneous=True)
-        self.labels["move_menu"].attach(grid, 0, 0, 1, 3)
-        self.labels["move_menu"].attach(bottomgrid, 0, 3, 1, 1)
-        self.labels["move_menu"].attach(distgrid, 0, 4, 1, 1)
+        footer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        footer.set_vexpand(False)
+        footer.pack_start(bottomgrid, False, False, 0)
+        footer.pack_start(distgrid, False, False, 0)
+
+        self.labels["move_menu"] = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=6,
+        )
+        self.labels["move_menu"].pack_start(jog_area, True, True, 0)
+        self.labels["move_menu"].pack_end(footer, False, False, 0)
 
         self.content.add(self.labels["move_menu"])
 

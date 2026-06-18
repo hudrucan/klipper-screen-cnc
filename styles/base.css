@@ -524,6 +524,31 @@ trough {
     border: 1px solid alpha(@text, 0.22);
 }
 
+.cnc-jog-pad {
+    padding: 0.2em;
+    border: 1px solid alpha(@text, 0.18);
+    background-color: alpha(@text, 0.025);
+}
+
+.cnc-jog-button {
+    min-width: 2.7em;
+    min-height: 2.7em;
+    margin: 0.05em;
+    padding: 0.2em;
+}
+
+.cnc-jog-center {
+    font-family: monospace;
+    font-size: 1em;
+    font-weight: bold;
+    opacity: 0.55;
+    border: 1px solid alpha(@text, 0.14);
+}
+
+.cnc-jog-actions {
+    padding-left: 0.2em;
+}
+
 .cnc-dro-heading {
     font-weight: bold;
     opacity: 0.75;
