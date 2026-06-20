@@ -59,6 +59,8 @@ the Python virtual environment by default.
 
 See the quick [installation](docs/installation.md), [controls](docs/controls.md), and
 [migration](docs/migration.md) notes for configuration and troubleshooting.
+Optional Klipper-side examples for CNC pause/resume/cancel and parameter-aware homing
+are documented in [Example CNC Macros](docs/cnc-macros.md).
 
 ## Sonic Pad Debian
 

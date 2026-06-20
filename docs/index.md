@@ -7,6 +7,7 @@ Start with:
 
 - [Installation](installation.md)
 - [CNC controls](controls.md)
+- [Example CNC macros](cnc-macros.md)
 - [Migration from upstream KlipperScreen](migration.md)
 
 Current CNC workflows include jog, DRO, WCS, MDI, macros, files, spindle control,
