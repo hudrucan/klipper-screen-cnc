@@ -97,6 +97,7 @@ class Panel(ScreenPanel):
             self.flowbox.set_max_children_per_line(columns)
 
         self.scroll = self._gtk.ScrolledWindow()
+        self.scroll.get_style_context().add_class("gcode-list-scroll")
         self.scroll.add(self.flowbox)
 
         self.main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, vexpand=True)

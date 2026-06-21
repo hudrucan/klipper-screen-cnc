@@ -245,6 +245,18 @@ scrollbar slider {
     background-color: @active;
 }
 
+.gcode-list-scroll scrollbar.vertical,
+.gcode-list-scroll scrollbar.vertical trough {
+    min-width: 0.7em;
+    margin: 0;
+    padding: 0;
+}
+
+.gcode-list-scroll scrollbar.vertical slider {
+    min-width: 0.7em;
+    margin: 0;
+}
+
 scrollbar.vertical.with-steppers {
     -GtkScrollbar-has-backward-stepper: true;
     -GtkScrollbar-has-forward-stepper: true;
