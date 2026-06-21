@@ -184,6 +184,9 @@ class Panel(ScreenPanel):
             itemname.get_style_context().add_class("print-filename")
             itemname.set_markup(f"<big><b>{basename}</b></big>")
             icon = Gtk.Button()
+            icon.set_margin_end(8)
+            itemname.set_margin_start(2)
+            info.set_margin_start(2)
             row = Gtk.Grid(hexpand=True, vexpand=False, valign=Gtk.Align.CENTER)
             row.get_style_context().add_class("frame-item")
             if self._screen.width >= 400:
