@@ -36,6 +36,7 @@ class Panel(ScreenPanel):
         sbox.pack_start(adjust, True, True, 5)
 
         self.labels["macros_list"] = self._gtk.ScrolledWindow()
+        self.labels["macros_list"].get_style_context().add_class("gcode-list-scroll")
         self.labels["macros"] = Gtk.Grid()
         self.labels["macros_list"].add(self.labels["macros"])
 
@@ -45,6 +46,7 @@ class Panel(ScreenPanel):
 
         self.content.add(self.labels["macros_menu"])
         self.labels["options_menu"] = self._gtk.ScrolledWindow()
+        self.labels["options_menu"].get_style_context().add_class("gcode-list-scroll")
         self.labels["options"] = Gtk.Grid()
         self.labels["options_menu"].add(self.labels["options"])
 
@@ -79,6 +81,7 @@ class Panel(ScreenPanel):
         btn.get_style_context().add_class("color3")
         btn.get_style_context().add_class("buttons_slim")
         btn.set_image(self._gtk.Image("resume", button_size, button_size))
+        btn.set_size_request(int(button_size * 2.2), -1)
         btn.connect("clicked", self.run_gcode_macro, macro)
         btn.set_halign(Gtk.Align.END)
 
