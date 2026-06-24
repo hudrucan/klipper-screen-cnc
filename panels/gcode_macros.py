@@ -76,7 +76,7 @@ class Panel(ScreenPanel):
         )
         name.set_markup(f"<big><b>{macro}</b></big>")
 
-        button_size = self._gtk.img_scale * self.bts
+        button_size = self._gtk.img_scale * self.bts * 2
         btn = Gtk.Button(hexpand=False, vexpand=False, can_focus=False, always_show_image=True)
         btn.get_style_context().add_class("color3")
         btn.get_style_context().add_class("buttons_slim")
