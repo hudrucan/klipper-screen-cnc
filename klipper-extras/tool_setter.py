@@ -378,7 +378,7 @@ class ToolSetter:
         return bool(apply_offset or set_zero)
 
     def cmd_QUERY_TOOL_SETTER(self, gcmd):
-        state = "TRIGGERED" if self._query_triggered() else "open"
+        state = "TRIGGERED" if self._query_triggered() else "ready"
         if self.calibration is None:
             gcmd.respond_info("Tool setter: %s, not calibrated" % (state,))
             return

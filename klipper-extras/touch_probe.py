@@ -393,7 +393,7 @@ class TouchProbe:
         return center, final_hop
 
     def cmd_QUERY_TOUCH_PROBE(self, gcmd):
-        state = "TRIGGERED" if self._query_triggered() else "open"
+        state = "TRIGGERED" if self._query_triggered() else "ready"
         gcmd.respond_info("Touch probe: %s" % (state,))
 
     def cmd_PROBE_X_POS(self, gcmd):

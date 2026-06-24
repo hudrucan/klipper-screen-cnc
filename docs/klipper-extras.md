@@ -95,6 +95,12 @@ the configured spindle output is nonzero, when required axes are unhomed, or
 when the probe is already triggered. A hop-over command also aborts if the full
 requested Z clearance is unavailable within machine limits.
 
+For a normally-closed touch probe, configure the pin inversion so a disconnected
+probe, broken wire, or touched probe reports `TRIGGERED`. When connected and
+untouched, `QUERY_TOUCH_PROBE` should report `ready`. In this documentation,
+`ready` means the configured Klipper input is not triggered; it does not mean
+the electrical circuit is physically open.
+
 Raw and diagnostic commands:
 
 ```gcode
@@ -224,7 +230,7 @@ The `X`, `Y`, and `SAFE_Z` overrides are also machine coordinates.
 
 Command purpose:
 
-- `QUERY_TOOL_SETTER`: report whether the setter input is open or triggered,
+- `QUERY_TOOL_SETTER`: report whether the setter input is ready or triggered,
   plus the saved calibration state.
 - `TOOL_SETTER_ACCURACY`: repeatedly probe the fixed setter and report
   min/max/range/average/median/standard deviation. It does not change WCS or
@@ -234,8 +240,11 @@ Command purpose:
 - `SET_BIT_Z`: after changing to a cutting bit, measure the bit on the fixed
   setter and optionally update active WCS Z with `APPLY=1`.
 
-The module requires homed XYZ, spindle off, no active print, and an open setter
-input before probing. `CALIBRATE_SETTER_Z` and `SET_BIT_Z` also require a
+The module requires homed XYZ, spindle off, no active print, and a ready setter
+input before probing. For a normally-closed setter switch, configure the pin so
+an unplugged switch or broken wire reports `TRIGGERED`; `QUERY_TOOL_SETTER`
+should report `ready` only when the switch is connected and untouched.
+`CALIBRATE_SETTER_Z` and `SET_BIT_Z` also require a
 selected G54-G59 WCS. It travels in machine coordinates, lifts to `SAFE_Z`,
 moves to the fixed setter XY, probes downward, and leaves Z retracted. The
 active WCS is preserved for all travel moves; only `SET_BIT_Z APPLY=1` changes

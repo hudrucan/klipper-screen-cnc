@@ -5,6 +5,8 @@ The repository includes optional Klipper configuration examples:
 - [`cnc_pause_resume.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_pause_resume.cfg)
 - [`cnc_start_end.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_start_end.cfg)
 - [`cnc_homing_override.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_homing_override.cfg)
+- [`cnc_touch_probe.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_touch_probe.cfg)
+- [`cnc_tool_setter.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_tool_setter.cfg)
 
 Copy the required files into `~/printer_data/config/`, review every machine-specific
 value, then include them from `printer.cfg`:
@@ -13,6 +15,8 @@ value, then include them from `printer.cfg`:
 [include cnc_pause_resume.cfg]
 [include cnc_start_end.cfg]
 [include cnc_homing_override.cfg]
+[include cnc_touch_probe.cfg]
+[include cnc_tool_setter.cfg]
 ```
 
 Run `RESTART` after validating the configuration.
@@ -82,3 +86,44 @@ interface used by the Fusion 360 post processor.
 Use the bundled
 [Fusion 360 post processor](https://github.com/hudrucan/klipper-screen-cnc/tree/master/tools/fusion360)
 so `START_PRINT` receives complete-file bounds once per generated job.
+
+## Touch Probe Macros
+
+`cnc_touch_probe.cfg` wraps the guarded `[touch_probe]` commands with
+KlipperScreen-friendly macro names:
+
+- `CHECK_TOUCH_PROBE`
+- `PROBE_STOCK_Z`
+- `FIND_STOCK_X_MIN`
+- `FIND_STOCK_X_MAX`
+- `FIND_STOCK_Y_MIN`
+- `FIND_STOCK_Y_MAX`
+- `CENTER_STOCK_X`
+- `CENTER_STOCK_Y`
+- `CENTER_STOCK_XY`
+- `PROBE_BORE_CENTER`
+
+The macros update the active G54-G59 WCS directly through `SET_ZERO=1`.
+The center macros accept `DISTANCE`, `DISTANCE_X`, and `DISTANCE_Y` overrides.
+When omitted, they use the full machine travel for that axis so the button can
+work without per-job input. Passing an approximate stock size plus clearance is
+faster and reduces unnecessary travel:
+
+```gcode
+CENTER_STOCK_X DISTANCE=120
+CENTER_STOCK_XY DISTANCE_X=120 DISTANCE_Y=80
+```
+
+## Fixed Tool Setter Macros
+
+`cnc_tool_setter.cfg` wraps the guarded `[tool_setter]` commands:
+
+- `CHECK_TOOL_SETTER`
+- `CHECK_SETTER_ACCURACY`
+- `CALIBRATE_TOOL_SETTER_Z`
+- `CHECK_BIT_Z`
+- `APPLY_BIT_Z`
+
+Use the dry-run `CHECK_BIT_Z` first to review the calculated WCS Z change.
+`APPLY_BIT_Z` probes again and applies the active WCS Z correction with
+`SET_BIT_Z APPLY=1`.
