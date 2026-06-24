@@ -74,9 +74,12 @@ class Panel(ScreenPanel):
         )
         name.set_markup(f"<big><b>{macro}</b></big>")
 
-        btn = self._gtk.Button("resume", style="color3")
+        button_size = self._gtk.img_scale * self.bts
+        btn = Gtk.Button(hexpand=False, vexpand=False, can_focus=False, always_show_image=True)
+        btn.get_style_context().add_class("color3")
+        btn.get_style_context().add_class("buttons_slim")
+        btn.set_image(self._gtk.Image("resume", button_size, button_size))
         btn.connect("clicked", self.run_gcode_macro, macro)
-        btn.set_hexpand(False)
         btn.set_halign(Gtk.Align.END)
 
         labels = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
