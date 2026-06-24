@@ -1,13 +1,13 @@
 # Experimental Klipper CNC Extras
 
-This repository includes two optional Klipper modules:
+This repository includes optional Klipper modules:
 
 - `work_coordinate_systems.py` adds persistent G54-G59 work coordinates,
   G53 machine mode, and G10 L2/L20.
 - `touch_probe.py` adds guarded XY stylus probing for edges, centers, and
-  bores.
-- `tool_touch_probe.py` uses the installed cutting tool and a conductive plate
-  to set work Z.
+  bores, plus reference Z surface probing.
+- `tool_setter.py` uses a fixed machine-mounted tool setter to re-touch Z after
+  manual tool changes.
 
 The WCS and XY probe modules were originally developed by **Shadowphyre from
 the E3CNC Discord community** and shared for beta testing. Klipper Screen CNC
@@ -27,7 +27,7 @@ Copy the modules into the active Klipper source tree:
 ```sh
 cp klipper-extras/work_coordinate_systems.py ~/klipper/klippy/extras/
 cp klipper-extras/touch_probe.py ~/klipper/klippy/extras/
-cp klipper-extras/tool_touch_probe.py ~/klipper/klippy/extras/
+cp klipper-extras/tool_setter.py ~/klipper/klippy/extras/
 ```
 
 On installations where Klipper lives elsewhere, copy them into that
@@ -45,7 +45,8 @@ persist_file: ~/printer_data/config/wcs_offsets.json
 
 The module intentionally waits until XYZ are homed before applying the saved
 WCS. This prevents stale offsets from altering the unhomed coordinate state
-after a restart. Selecting G54-G59 is persisted automatically.
+after a restart. Selecting G54-G59 is persisted automatically, even before
+homing; the selected WCS is applied after the next full XYZ home.
 
 Available commands:
 
@@ -65,10 +66,11 @@ the active WCS after parking.
 
 ## XY Stylus Probe
 
-This probe is mounted in the ER11 collet and locates workpiece geometry in X
-and Y. Replacing it with a cutting tool does not invalidate XY because both
-tools share the spindle centerline. It must not be used to establish Z: the
-cutting tool has a different length after the stylus is removed.
+This probe is mounted in the ER11 collet and locates workpiece geometry.
+Replacing it with a cutting tool does not invalidate XY because both tools
+share the spindle centerline. Its Z result is a reference surface for setup
+and tool-setter calibration; use the fixed tool setter after changing to a
+cutting bit.
 
 Example configuration:
 
@@ -101,6 +103,7 @@ PROBE_X_POS
 PROBE_X_NEG
 PROBE_Y_POS
 PROBE_Y_NEG
+PROBE_Z_NEG
 ```
 
 Workpiece commands:
@@ -110,6 +113,7 @@ FIND_EDGE_X_POS
 FIND_EDGE_X_NEG
 FIND_EDGE_Y_POS
 FIND_EDGE_Y_NEG
+FIND_SURFACE_Z
 FIND_CENTER_X DISTANCE=40
 FIND_CENTER_Y DISTANCE=30
 FIND_CENTER_XY DISTANCE_X=40 DISTANCE_Y=30
@@ -121,6 +125,7 @@ G54-G59 coordinate directly:
 
 ```gcode
 FIND_EDGE_X_NEG SET_ZERO=1
+FIND_SURFACE_Z SET_ZERO=1
 FIND_CENTER_XY DISTANCE_X=40 DISTANCE_Y=30 SET_ZERO=1
 ```
 
@@ -137,62 +142,79 @@ Probe parameters such as `FAST_SPEED`, `SLOW_SPEED`, `MAX_DISTANCE`,
 `RETRACT_DISTANCE`, `SAMPLES`, `Z_HOP`, `Z_HOP_SPEED`, and `OVERSHOOT` may be
 overridden per command.
 
-## Cutting-tool Z Touch-off
+## Fixed Tool Setter
 
-Configure the separate module:
+Configure this module when a switch or touch plate is permanently mounted on
+the machine bed:
 
 ```ini
-[tool_touch_probe]
-pin: ^!PC5
+[tool_setter]
+pin: ^!PC6
+persist_file: ~/printer_data/config/tool_setter.json
+setter_x: 186.5
+setter_y: 246.5
+safe_z: 60
+travel_speed: 30
+z_speed: 10
 fast_speed: 5
 slow_speed: 0.5
 max_distance: 25
 retract_distance: 2
 final_retract: 5
-plate_thickness: 5
 trigger_offset: 0
 samples: 1
 spindle_object: output_pin spindle
 ```
 
-The XY stylus and tool plate may share the same input pin. The modules attach
-that pin to different machine axes and never probe them simultaneously.
+The fixed setter can use a different input pin from the XY touch probe. It is
+intended for manual setup and UI buttons, not automatic mid-job tool changes.
 
-After installing or changing a cutting tool:
+Typical setup:
 
-1. Home XYZ and select the intended G54-G59 WCS.
-2. Keep the spindle off.
-3. Place the conductive plate on the workpiece surface.
-4. Connect the probe lead and verify the circuit:
-
-   ```gcode
-   QUERY_TOOL_TOUCH_PROBE
-   ```
-
-5. Touch off using the configured plate thickness:
+1. Home XYZ, select the intended G54-G59 WCS, and use the XY/Z probing workflow
+   to set the stock work zero.
+2. With the same reference probe still installed, run:
 
    ```gcode
-   TOUCH_OFF_Z
+   CALIBRATE_TOOL_SETTER
    ```
 
-   Override it for a different plate when needed:
+   This moves to the configured `setter_x`/`setter_y`, probes down, and stores
+   the fixed setter's Z height in the active WCS.
+
+3. Replace the probe with the cutting bit.
+4. Probe the bit against the fixed setter:
 
    ```gcode
-   TOUCH_OFF_Z PLATE_THICKNESS=10
+   TOUCH_OFF_TOOL
    ```
 
-6. Remove the lead and plate before starting the spindle.
+   By default this only reports the calculated WCS Z adjustment.
 
-`TOUCH_OFF_Z` probes down, retracts, repeats at slow speed, sets the active WCS
-so the contact point equals the configured `plate_thickness` or command
-`PLATE_THICKNESS` override, then leaves the tool retracted.
-It always updates work Z; use `PROBE_TOOL_Z` for a raw diagnostic probe that
-does not modify WCS.
+5. Apply the adjustment after verifying the result:
 
-Run Z touch-off again after every tool change. This workflow is for a movable
-plate placed on the workpiece. A fixed machine tool setter requires tool-length
-offset handling and should not directly rewrite WCS Z.
+   ```gcode
+   TOUCH_OFF_TOOL APPLY=1
+   ```
 
-`trigger_offset` is a zero-or-positive correction added to the raw electrical
-trigger coordinate. Calibrate it using a known plate at the same slow speed
-used for normal touch-off.
+   `SET_ZERO=1` is accepted as an alias for UI consistency.
+
+Available commands:
+
+```gcode
+QUERY_TOOL_SETTER
+CALIBRATE_TOOL_SETTER
+TOUCH_OFF_TOOL
+```
+
+Useful command overrides:
+
+```gcode
+CALIBRATE_TOOL_SETTER X=186.5 Y=246.5 SAFE_Z=60
+TOUCH_OFF_TOOL SAMPLES=3 APPLY=1
+```
+
+The module requires homed XYZ, a selected G54-G59 WCS, spindle off, no active
+print, and an open setter input before probing. It travels in machine
+coordinates, lifts to `SAFE_Z`, moves to the fixed setter XY, probes downward,
+and leaves Z retracted.

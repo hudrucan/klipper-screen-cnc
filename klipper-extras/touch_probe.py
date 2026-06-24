@@ -1,4 +1,4 @@
-# CNC XY touch probing for Klipper.
+# CNC touch probing for Klipper.
 #
 # Originally developed by Shadowphyre from the E3CNC Discord community
 # and shared for beta testing. Hardened and extended by Klipper Screen CNC.
@@ -13,6 +13,7 @@ DIRECTIONS = {
     "X-": (0, -1),
     "Y+": (1, 1),
     "Y-": (1, -1),
+    "Z-": (2, -1),
 }
 AXIS_NAMES = "XYZ"
 
@@ -69,6 +70,7 @@ class TouchProbe:
         self.endstops = {
             0: ProbeEndstopWrapper(config, "x"),
             1: ProbeEndstopWrapper(config, "y"),
+            2: ProbeEndstopWrapper(config, "z"),
         }
         self.last_result = None
         self.last_command = None
@@ -80,10 +82,13 @@ class TouchProbe:
             "PROBE_X_NEG": self.cmd_PROBE_X_NEG,
             "PROBE_Y_POS": self.cmd_PROBE_Y_POS,
             "PROBE_Y_NEG": self.cmd_PROBE_Y_NEG,
+            "PROBE_Z_NEG": self.cmd_PROBE_Z_NEG,
             "FIND_EDGE_X_POS": self.cmd_FIND_EDGE_X_POS,
             "FIND_EDGE_X_NEG": self.cmd_FIND_EDGE_X_NEG,
             "FIND_EDGE_Y_POS": self.cmd_FIND_EDGE_Y_POS,
             "FIND_EDGE_Y_NEG": self.cmd_FIND_EDGE_Y_NEG,
+            "FIND_SURFACE_Z": self.cmd_FIND_SURFACE_Z,
+            "FIND_STOCK_Z": self.cmd_FIND_SURFACE_Z,
             "FIND_CENTER_X": self.cmd_FIND_CENTER_X,
             "FIND_CENTER_Y": self.cmd_FIND_CENTER_Y,
             "FIND_CENTER_XY": self.cmd_FIND_CENTER_XY,
@@ -252,6 +257,11 @@ class TouchProbe:
         )
         return edge
 
+    def _surface_z(self, trigger_position):
+        surface = list(trigger_position)
+        surface[2] += self.trigger_offset
+        return surface
+
     def _z_hop_up(self, gcmd):
         hop = gcmd.get_float("Z_HOP", self.z_hop, above=0.0)
         speed = gcmd.get_float(
@@ -315,6 +325,20 @@ class TouchProbe:
                 AXIS_NAMES[axis],
                 result[axis],
                 edge[axis],
+                ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
+            )
+        )
+
+    def _find_surface_z(self, gcmd):
+        self._require_safe(gcmd, "XYZ")
+        result = self._probe(gcmd, "Z-")
+        surface = self._surface_z(result)
+        self._set_wcs(gcmd, surface, {2: 0.0})
+        gcmd.respond_info(
+            "Z surface: raw %.6f, compensated %.6f%s"
+            % (
+                result[2],
+                surface[2],
                 ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
             )
         )
@@ -384,6 +408,9 @@ class TouchProbe:
     def cmd_PROBE_Y_NEG(self, gcmd):
         self._raw_probe(gcmd, "Y-")
 
+    def cmd_PROBE_Z_NEG(self, gcmd):
+        self._raw_probe(gcmd, "Z-")
+
     def cmd_FIND_EDGE_X_POS(self, gcmd):
         self._find_edge(gcmd, "X+")
 
@@ -395,6 +422,9 @@ class TouchProbe:
 
     def cmd_FIND_EDGE_Y_NEG(self, gcmd):
         self._find_edge(gcmd, "Y-")
+
+    def cmd_FIND_SURFACE_Z(self, gcmd):
+        self._find_surface_z(gcmd)
 
     def cmd_FIND_CENTER_X(self, gcmd):
         self._find_center(

@@ -20,6 +20,7 @@ WCS_NAME_TO_P = {name: index for index, name in WCS_P_MAP.items()}
 class WorkCoordinateSystems:
     def __init__(self, config):
         self.printer = config.get_printer()
+        self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object("gcode")
         self.persist_path = os.path.expanduser(
             config.get("persist_file", "~/wcs_offsets.json")
@@ -28,6 +29,9 @@ class WorkCoordinateSystems:
         self.active_wcs = "G54"
         self.machine_mode = False
         self.applied = False
+        self.restore_timer = self.reactor.register_timer(
+            self._restore_after_home, self.reactor.NEVER
+        )
 
         for name in WCS_NAMES:
             self.gcode.register_command(name, self.cmd_select_wcs)
@@ -59,15 +63,24 @@ class WorkCoordinateSystems:
         )
 
     def _handle_home_rails_end(self, homing_state, rails):
+        # gcode_move may still be settling its post-G28 coordinate state when
+        # this event fires. Defer the WCS restore slightly so Klipper's native
+        # homing update cannot overwrite the selected G54-G59 base position.
+        self.reactor.update_timer(
+            self.restore_timer, self.reactor.monotonic() + 0.100
+        )
+
+    def _restore_after_home(self, eventtime):
         toolhead = self.printer.lookup_object("toolhead")
         homed = toolhead.get_kinematics().get_status(
-            self.printer.get_reactor().monotonic()
+            eventtime
         ).get("homed_axes", "")
         if not all(axis in homed for axis in "xyz"):
             self.applied = False
-            return
+            return self.reactor.NEVER
         self._apply_wcs(self.active_wcs)
         logging.info("WCS: XYZ homed, restored %s", self.active_wcs)
+        return self.reactor.NEVER
 
     def _load(self):
         if not os.path.exists(self.persist_path):
@@ -117,12 +130,15 @@ class WorkCoordinateSystems:
                     pass
 
     def _require_homed(self, gcmd):
+        if not self._is_xyz_homed():
+            raise gcmd.error("WCS command requires homed XYZ")
+
+    def _is_xyz_homed(self):
         toolhead = self.printer.lookup_object("toolhead")
         homed = toolhead.get_kinematics().get_status(
-            self.printer.get_reactor().monotonic()
+            self.reactor.monotonic()
         ).get("homed_axes", "")
-        if not all(axis in homed for axis in "xyz"):
-            raise gcmd.error("WCS command requires homed XYZ")
+        return all(axis in homed for axis in "xyz")
 
     def _sync_gcode_position(self):
         self.printer.lookup_object("gcode_move").reset_last_position()
@@ -171,15 +187,30 @@ class WorkCoordinateSystems:
         self._persist()
 
     def cmd_select_wcs(self, gcmd):
-        self._require_homed(gcmd)
         name = gcmd.get_command()
-        self._apply_wcs(name)
+        if self._is_xyz_homed():
+            self._apply_wcs(name)
+            applied = True
+        else:
+            # Allow choosing the intended work coordinate before homing. The
+            # selection is persisted now and applied after the next full XYZ
+            # home, avoiding a silent fallback to G54 on restart/connect.
+            self.active_wcs = name
+            self.machine_mode = False
+            self.applied = False
+            applied = False
         self._persist()
         offset = self.wcs[name]
-        gcmd.respond_info(
-            "WCS: %s active (machine origin X=%.4f Y=%.4f Z=%.4f)"
-            % (name, offset[0], offset[1], offset[2])
-        )
+        if applied:
+            gcmd.respond_info(
+                "WCS: %s active (machine origin X=%.4f Y=%.4f Z=%.4f)"
+                % (name, offset[0], offset[1], offset[2])
+            )
+        else:
+            gcmd.respond_info(
+                "WCS: %s selected; pending XYZ home before applying offsets"
+                % (name,)
+            )
 
     def cmd_G53(self, gcmd):
         self._require_homed(gcmd)
