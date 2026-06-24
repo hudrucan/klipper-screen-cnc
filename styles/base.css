@@ -687,6 +687,27 @@ trough {
     font-weight: bold;
 }
 
+.cnc-probe-card {
+    padding: 0.65em 0.75em;
+    border: 1px solid alpha(@text, 0.16);
+    background-color: alpha(@text, 0.035);
+}
+
+.cnc-probe-section {
+    padding: 0.45em 0.55em;
+    border: 1px solid alpha(@text, 0.12);
+    background-color: alpha(@text, 0.02);
+}
+
+.cnc-probe-heading {
+    font-size: 1.1em;
+}
+
+.cnc-probe-detail {
+    opacity: 0.68;
+    font-size: 0.85em;
+}
+
 .cnc-override-value {
     font-family: monospace;
     font-size: 4em;

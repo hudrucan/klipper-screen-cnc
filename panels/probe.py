@@ -1,0 +1,313 @@
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Pango
+
+from ks_includes.screen_panel import ScreenPanel
+
+
+class Panel(ScreenPanel):
+    touch_actions = (
+        ("query_touch", "Check", "QUERY_TOUCH_PROBE", False, "Report touch probe state"),
+        ("stock_z", "Stock Z0", "FIND_SURFACE_Z SET_ZERO=1", True, "Probe stock surface and set WCS Z0"),
+        ("x_min", "X Min", "FIND_EDGE_X_NEG SET_ZERO=1", True, "Probe X-min edge and set WCS X0"),
+        ("x_max", "X Max", "FIND_EDGE_X_POS SET_ZERO=1", True, "Probe X-max edge and set WCS X0"),
+        ("y_min", "Y Min", "FIND_EDGE_Y_NEG SET_ZERO=1", True, "Probe Y-min edge and set WCS Y0"),
+        ("y_max", "Y Max", "FIND_EDGE_Y_POS SET_ZERO=1", True, "Probe Y-max edge and set WCS Y0"),
+        ("center_x", "Center X", "FIND_CENTER_X", True, "Probe both X edges and set center X0"),
+        ("center_y", "Center Y", "FIND_CENTER_Y", True, "Probe both Y edges and set center Y0"),
+        ("center_xy", "Center XY", "FIND_CENTER_XY", True, "Probe X/Y edges and set center XY0"),
+        ("bore", "Bore XY", "PROBE_BORE SET_ZERO=1", True, "Probe a bore and set center XY0"),
+    )
+    setter_actions = (
+        ("query_setter", "Check", "QUERY_TOOL_SETTER", False, "Report tool setter state"),
+        ("accuracy", "Accuracy", "TOOL_SETTER_ACCURACY", True, "Probe setter repeatability"),
+        ("calibrate", "Calibrate Z", "CALIBRATE_SETTER_Z", True, "Store fixed setter height after stock Z0"),
+        ("check_bit", "Check Bit Z", "SET_BIT_Z", True, "Measure bit and report WCS Z delta"),
+        ("apply_bit", "Apply Bit Z", "SET_BIT_Z APPLY=1", True, "Measure bit and update active WCS Z"),
+    )
+
+    def __init__(self, screen, title):
+        super().__init__(screen, title or "Probe")
+        self.buttons = {}
+
+        self.labels["state"] = self._chip("READY")
+        self.labels["homed"] = self._chip("Homed: none")
+        self.labels["wcs"] = self._chip("WCS --")
+        chips = Gtk.Grid(column_homogeneous=True)
+        chips.set_column_spacing(8)
+        chips.attach(self.labels["state"], 0, 0, 1, 1)
+        chips.attach(self.labels["homed"], 1, 0, 1, 1)
+        chips.attach(self.labels["wcs"], 2, 0, 1, 1)
+
+        status_grid = Gtk.Grid(column_homogeneous=True)
+        status_grid.set_column_spacing(10)
+        status_grid.set_row_spacing(10)
+        status_grid.attach(
+            self._status_card("touch", "TOUCH PROBE", "Not configured"), 0, 0, 1, 1
+        )
+        status_grid.attach(
+            self._status_card("setter", "TOOL SETTER", "Not configured"), 1, 0, 1, 1
+        )
+
+        actions = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        actions.pack_start(
+            self._section(
+                "Touch Probe",
+                "Find stock edges, centers, bore centers, and stock Z with the spindle-mounted probe.",
+                self.touch_actions,
+            ),
+            False,
+            False,
+            0,
+        )
+        actions.pack_start(
+            self._section(
+                "Tool Setter",
+                "Calibrate the fixed setter, check repeatability, and re-touch Z after bit changes.",
+                self.setter_actions,
+            ),
+            False,
+            False,
+            0,
+        )
+
+        scroll = self._gtk.ScrolledWindow()
+        scroll.get_style_context().add_class("gcode-list-scroll")
+        scroll.add(actions)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.pack_start(chips, False, False, 0)
+        content.pack_start(status_grid, False, False, 0)
+        content.pack_start(scroll, True, True, 0)
+        self.content.add(content)
+
+    @staticmethod
+    def _chip(text):
+        label = Gtk.Label(label=text)
+        label.get_style_context().add_class("cnc-status")
+        return label
+
+    def _status_card(self, key, heading, value):
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        card.get_style_context().add_class("cnc-probe-card")
+        label = Gtk.Label(label=heading, xalign=0)
+        label.get_style_context().add_class("cnc-status-heading")
+        self.labels[f"{key}_value"] = Gtk.Label(label=value, xalign=0)
+        self.labels[f"{key}_value"].set_ellipsize(Pango.EllipsizeMode.END)
+        self.labels[f"{key}_value"].get_style_context().add_class("cnc-status-value")
+        self.labels[f"{key}_detail"] = Gtk.Label(label="--", xalign=0, wrap=True)
+        self.labels[f"{key}_detail"].set_lines(3)
+        self.labels[f"{key}_detail"].set_ellipsize(Pango.EllipsizeMode.END)
+        self.labels[f"{key}_detail"].get_style_context().add_class("cnc-probe-detail")
+        card.pack_start(label, False, False, 0)
+        card.pack_start(self.labels[f"{key}_value"], False, False, 0)
+        card.pack_start(self.labels[f"{key}_detail"], False, False, 0)
+        return card
+
+    def _section(self, title, subtitle, actions):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box.get_style_context().add_class("cnc-probe-section")
+        heading = Gtk.Label(label=f"<b>{title}</b>", xalign=0, use_markup=True)
+        heading.get_style_context().add_class("cnc-probe-heading")
+        note = Gtk.Label(label=subtitle, xalign=0, wrap=True)
+        note.get_style_context().add_class("cnc-probe-detail")
+        grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
+        grid.set_column_spacing(8)
+        grid.set_row_spacing(8)
+        columns = 2 if self._screen.vertical_mode else 3
+        for index, (name, label, script, confirm, tooltip) in enumerate(actions):
+            button = self._gtk.Button(None, label, f"color{index % 4 + 1}")
+            button.get_style_context().add_class("buttons_slim")
+            button.set_tooltip_text(tooltip)
+            button.connect("clicked", self.run_action, name, script, confirm)
+            self.buttons[name] = button
+            grid.attach(button, index % columns, index // columns, 1, 1)
+        box.pack_start(heading, False, False, 0)
+        box.pack_start(note, False, False, 0)
+        box.pack_start(grid, False, False, 0)
+        return box
+
+    def activate(self):
+        self.update_status()
+
+    def process_update(self, action, data):
+        if action == "notify_status_update":
+            self.update_status()
+
+    def update_status(self):
+        state = self._printer.state or "unknown"
+        homed_axes = self._printer.get_stat("toolhead", "homed_axes") or ""
+        wcs = self._printer.get_stat("work_coordinate_systems") or {}
+        active_wcs = "G53" if wcs.get("machine_mode") else wcs.get("active_wcs", "G54")
+
+        self.labels["state"].set_label(state.upper())
+        self.labels["homed"].set_label(f"Homed: {homed_axes.upper() or 'none'}")
+        self.labels["wcs"].set_label(active_wcs)
+
+        self._update_touch_status()
+        self._update_setter_status()
+        self._update_buttons()
+
+    def _update_touch_status(self):
+        status = self._printer.get_stat("touch_probe")
+        if not status:
+            self.labels["touch_value"].set_label("Not configured")
+            self.labels["touch_detail"].set_label("Install [touch_probe] to enable stock probing.")
+            return
+        triggered = status.get("triggered")
+        state = "Unknown" if triggered is None else ("TRIGGERED" if triggered else "Ready")
+        self.labels["touch_value"].set_label(state)
+        self.labels["touch_detail"].set_label(self._touch_detail(status))
+
+    def _update_setter_status(self):
+        status = self._printer.get_stat("tool_setter")
+        if not status:
+            self.labels["setter_value"].set_label("Not configured")
+            self.labels["setter_detail"].set_label("Install [tool_setter] to enable bit Z workflows.")
+            return
+        triggered = status.get("triggered")
+        calibration = status.get("calibration")
+        if calibration:
+            active_wcs = calibration.get("active_wcs", "--")
+            setter_z = float(calibration.get("setter_work_z", 0))
+            state = "Unknown" if triggered is None else ("TRIGGERED" if triggered else "Calibrated")
+            self.labels["setter_value"].set_label(state)
+            self.labels["setter_detail"].set_label(
+                self._setter_detail(status, active_wcs, setter_z)
+            )
+        else:
+            state = (
+                "Unknown"
+                if triggered is None
+                else ("TRIGGERED" if triggered else "Needs calibration")
+            )
+            self.labels["setter_value"].set_label(state)
+            self.labels["setter_detail"].set_label(self._setter_detail(status))
+
+    def _touch_detail(self, status):
+        last_result = status.get("last_result") or {}
+        position = last_result.get("position")
+        samples = last_result.get("samples") or []
+        if position:
+            detail = "Last %s  X%s Y%s Z%s" % (
+                last_result.get("direction", status.get("last_command") or "probe"),
+                self._fmt(position, 0),
+                self._fmt(position, 1),
+                self._fmt(position, 2),
+            )
+            if samples:
+                detail += f" · {len(samples)} sample{'s' if len(samples) != 1 else ''}"
+            return detail
+        return status.get("last_command") or "No probe move yet"
+
+    def _setter_detail(self, status, active_wcs=None, setter_z=None):
+        lines = []
+        setter_x = status.get("setter_x")
+        setter_y = status.get("setter_y")
+        safe_z = status.get("safe_z")
+        if setter_x is not None and setter_y is not None:
+            position = f"X{float(setter_x):.3f} Y{float(setter_y):.3f}"
+            if safe_z is not None:
+                position += f" safe Z{float(safe_z):.3f}"
+            lines.append(position)
+
+        calibration = status.get("calibration") or {}
+        if active_wcs is not None and setter_z is not None:
+            reference = calibration.get("reference_contact_z")
+            line = f"{active_wcs} setter Z {setter_z:.3f}"
+            if reference is not None:
+                line += f" · ref {float(reference):.3f}"
+            lines.append(line)
+        else:
+            lines.append("Run Calibrate Z after stock Z0 is set.")
+
+        last_result = status.get("last_result") or {}
+        if "delta" in last_result:
+            lines.append(
+                "Last bit ΔZ %+.3f · target offset %.3f"
+                % (
+                    float(last_result["delta"]),
+                    float(last_result.get("new_wcs_z_offset", 0)),
+                )
+            )
+        elif "contact_z" in last_result:
+            lines.append(f"Last contact Z {float(last_result['contact_z']):.3f}")
+        return "\n".join(lines)
+
+    @staticmethod
+    def _fmt(values, index):
+        try:
+            return f"{float(values[index]):.3f}"
+        except (TypeError, ValueError, IndexError):
+            return "--"
+
+    def _update_buttons(self):
+        ready = self._printer.state == "ready"
+        homed_axes = self._printer.get_stat("toolhead", "homed_axes") or ""
+        xyz_homed = all(axis in homed_axes for axis in ("x", "y", "z"))
+        has_touch = bool(self._printer.get_stat("touch_probe"))
+        has_setter = bool(self._printer.get_stat("tool_setter"))
+        calibration = (self._printer.get_stat("tool_setter") or {}).get("calibration")
+
+        for name in self.buttons:
+            if name.startswith(("query_touch", "query_setter")):
+                self.buttons[name].set_sensitive(
+                    (has_touch if name == "query_touch" else has_setter) and ready
+                )
+            elif name in {item[0] for item in self.touch_actions}:
+                self.buttons[name].set_sensitive(has_touch and ready and xyz_homed)
+            elif name == "calibrate":
+                self.buttons[name].set_sensitive(has_setter and ready and xyz_homed)
+            elif name in {"check_bit", "apply_bit", "accuracy"}:
+                self.buttons[name].set_sensitive(
+                    has_setter and ready and xyz_homed and (calibration is not None or name == "accuracy")
+                )
+
+    def run_action(self, widget, name, script, confirm):
+        if name == "center_x":
+            script = f"{script} DISTANCE={self._axis_span(0):.3f} SET_ZERO=1"
+        elif name == "center_y":
+            script = f"{script} DISTANCE={self._axis_span(1):.3f} SET_ZERO=1"
+        elif name == "center_xy":
+            script = (
+                f"{script} DISTANCE_X={self._axis_span(0):.3f} "
+                f"DISTANCE_Y={self._axis_span(1):.3f} SET_ZERO=1"
+            )
+
+        if confirm:
+            self._screen._confirm_send_action(
+                widget,
+                self._confirm_text(name, script),
+                "printer.gcode.script",
+                {"script": script},
+            )
+        else:
+            self._screen._send_action(widget, "printer.gcode.script", {"script": script})
+
+    def _confirm_text(self, name, script):
+        notes = {
+            "stock_z": "This will update active WCS Z0.",
+            "x_min": "This will update active WCS X0.",
+            "x_max": "This will update active WCS X0.",
+            "y_min": "This will update active WCS Y0.",
+            "y_max": "This will update active WCS Y0.",
+            "center_x": "This will update active WCS X0.",
+            "center_y": "This will update active WCS Y0.",
+            "center_xy": "This will update active WCS XY0.",
+            "bore": "This will update active WCS XY0.",
+            "accuracy": "This will touch the fixed setter repeatedly.",
+            "calibrate": "Use this only after stock Z0 is correct.",
+            "check_bit": "Dry run: WCS Z will not be changed.",
+            "apply_bit": "This will update active WCS Z for the current bit.",
+        }
+        note = notes.get(name, "Run probing command?")
+        return f"{note}\n\n<tt>{script}</tt>\n\nSpindle must be off."
+
+    def _axis_span(self, axis):
+        axis_min = self._printer.get_stat("toolhead", "axis_minimum") or [0, 0, 0]
+        axis_max = self._printer.get_stat("toolhead", "axis_maximum") or [0, 0, 0]
+        try:
+            return max(float(axis_max[axis]) - float(axis_min[axis]), 1.0)
+        except (TypeError, ValueError, IndexError):
+            return 1.0
