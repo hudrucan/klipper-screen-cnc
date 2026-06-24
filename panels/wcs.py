@@ -243,8 +243,8 @@ class Panel(ScreenPanel):
         self.buttons["G53"] = machine_button
         zero_grid.attach(machine_button, 0, 0, 1, 1)
         for index, axis in enumerate((*self.axes, "ALL")):
-            label = "XYZ0" if axis == "ALL" else f"{axis}0"
-            button = self._gtk.Button(label=label)
+            label = f"Zero {axis.title()}" if axis == "ALL" else f"Zero {axis}"
+            button = self._gtk.Button(label=label, style=f"color{index % 4 + 1}")
             button.connect("clicked", self.confirm_zero, axis)
             button.get_style_context().add_class("buttons_slim")
             self.buttons[f"zero_{axis}"] = button

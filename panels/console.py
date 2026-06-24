@@ -1,3 +1,6 @@
+import json
+import logging
+import os
 import re
 import time
 
@@ -6,7 +9,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from datetime import datetime
 
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 from ks_includes.screen_panel import ScreenPanel
 
@@ -26,6 +29,9 @@ class Panel(ScreenPanel):
         self.autoscroll = True
         self.command_history = []
         self.history_position = 0
+        self.suggestions = []
+        self.history_path = self.get_history_path()
+        self.load_command_history()
 
         self.labels["state"] = self._status_label("OFFLINE")
         self.labels["mode"] = self._status_label("G54 · G90 · G21")
@@ -70,6 +76,8 @@ class Panel(ScreenPanel):
         entry.connect("button-press-event", self._screen.show_keyboard)
         entry.connect("touch-event", self._screen.show_keyboard)
         entry.connect("activate", self._send_command)
+        entry.connect("changed", self.update_suggestions)
+        entry.connect("key-press-event", self.on_entry_key_press)
         entry.set_placeholder_text("Enter one MDI command")
         entry.grab_focus_without_selecting()
 
@@ -98,10 +106,20 @@ class Panel(ScreenPanel):
         ebox.add(entry)
         ebox.add(send)
 
+        suggestions = Gtk.FlowBox()
+        suggestions.set_max_children_per_line(4)
+        suggestions.set_min_children_per_line(1)
+        suggestions.set_selection_mode(Gtk.SelectionMode.NONE)
+        suggestions.set_homogeneous(True)
+        suggestions.set_row_spacing(4)
+        suggestions.set_column_spacing(4)
+        suggestions.set_no_show_all(True)
+
         self.labels.update(
             {
                 "entry": entry,
                 "send": send,
+                "suggestions": suggestions,
                 "sw": sw,
                 "tb": tb,
                 "tv": tv,
@@ -112,6 +130,7 @@ class Panel(ScreenPanel):
         content_box.pack_start(status, False, False, 0)
         content_box.pack_start(options, False, False, 5)
         content_box.add(sw)
+        content_box.pack_end(suggestions, False, False, 0)
         content_box.pack_end(ebox, False, False, 0)
         self.content.add(content_box)
 
@@ -192,6 +211,7 @@ class Panel(ScreenPanel):
             return
 
         self.labels["entry"].set_text("")
+        self.clear_suggestions()
         self._screen.remove_keyboard()
 
         self.remember_command(cmd)
@@ -203,6 +223,39 @@ class Panel(ScreenPanel):
         self.clear()
         self.update_machine_state()
         self._screen._ws.send_method("server.gcode_store", {"count": 100}, self.gcode_response)
+        self.update_suggestions()
+
+    @staticmethod
+    def get_history_path():
+        directory = os.path.expanduser("~/printer_data/config")
+        if not os.path.isdir(directory):
+            directory = os.path.expanduser("~/.config/klipper_screen")
+        return os.path.join(directory, "mdi_history.json")
+
+    def load_command_history(self):
+        if not os.path.exists(self.history_path):
+            return
+        try:
+            with open(self.history_path, "r") as handle:
+                data = json.load(handle)
+            if isinstance(data, list):
+                self.command_history = [
+                    str(command).strip()
+                    for command in data[-50:]
+                    if str(command).strip()
+                ]
+                self.history_position = len(self.command_history)
+        except Exception:
+            logging.exception("Unable to load MDI history from %s", self.history_path)
+
+    def save_command_history(self):
+        try:
+            os.makedirs(os.path.dirname(self.history_path), exist_ok=True)
+            with open(self.history_path, "w") as handle:
+                json.dump(self.command_history[-50:], handle, indent=2)
+                handle.write("\n")
+        except Exception:
+            logging.exception("Unable to save MDI history to %s", self.history_path)
 
     def remember_command(self, command):
         command = command.strip()
@@ -211,6 +264,7 @@ class Panel(ScreenPanel):
         if not self.command_history or self.command_history[-1] != command:
             self.command_history.append(command)
         self.command_history = self.command_history[-50:]
+        self.save_command_history()
 
     def history_previous(self, widget=None):
         if not self.command_history:
@@ -230,6 +284,84 @@ class Panel(ScreenPanel):
         )
         self.labels["entry"].set_text(command)
         self.labels["entry"].set_position(-1)
+
+    def get_command_candidates(self):
+        commands = set()
+        available = self._printer.available_commands or {}
+        if isinstance(available, dict):
+            commands.update(available.keys())
+        elif isinstance(available, (list, tuple, set)):
+            commands.update(available)
+        commands.update(self._printer.get_gcode_macros())
+        return sorted(
+            {
+                str(command).strip().upper()
+                for command in commands
+                if str(command).strip() and not str(command).strip().startswith("_")
+            }
+        )
+
+    def command_prefix(self):
+        text = self.labels["entry"].get_text().lstrip()
+        if not text:
+            return "", ""
+        parts = text.split(maxsplit=1)
+        prefix = parts[0].upper()
+        suffix = parts[1] if len(parts) > 1 else ""
+        return prefix, suffix
+
+    def update_suggestions(self, widget=None):
+        prefix, _ = self.command_prefix()
+        if not prefix:
+            self.clear_suggestions()
+            return
+
+        matches = [
+            command for command in self.get_command_candidates()
+            if command.startswith(prefix) and command != prefix
+        ][:8]
+        self.suggestions = matches
+
+        box = self.labels["suggestions"]
+        for child in box.get_children():
+            box.remove(child)
+        if not matches:
+            box.hide()
+            return
+        for command in matches:
+            button = self._gtk.Button(label=command)
+            button.get_style_context().add_class("buttons_slim")
+            button.connect("clicked", self.apply_suggestion, command)
+            box.add(button)
+        box.show_all()
+
+    def clear_suggestions(self):
+        self.suggestions = []
+        box = self.labels.get("suggestions")
+        if not box:
+            return
+        for child in box.get_children():
+            box.remove(child)
+        box.hide()
+
+    def apply_suggestion(self, widget, command=None):
+        command = command or (self.suggestions[0] if self.suggestions else None)
+        if not command:
+            return
+        _, suffix = self.command_prefix()
+        text = f"{command} {suffix}".rstrip()
+        if not suffix:
+            text += " "
+        self.labels["entry"].set_text(text)
+        self.labels["entry"].set_position(-1)
+
+    def on_entry_key_press(self, widget, event):
+        if event.keyval not in (Gdk.KEY_Tab, Gdk.KEY_KP_Tab):
+            return False
+        if not self.suggestions:
+            self.update_suggestions()
+        self.apply_suggestion(widget)
+        return True
 
     def mdi_available(self):
         return self._printer.state in {"ready", "paused"}
