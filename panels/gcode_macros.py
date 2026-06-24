@@ -81,7 +81,7 @@ class Panel(ScreenPanel):
         btn.get_style_context().add_class("color3")
         btn.get_style_context().add_class("buttons_slim")
         btn.set_image(self._gtk.Image("resume", button_size, button_size))
-        btn.set_size_request(int(button_size * 5), -1)
+        btn.set_size_request(int(button_size * 2.2), -1)
         btn.connect("clicked", self.run_gcode_macro, macro)
         btn.set_halign(Gtk.Align.END)
 
