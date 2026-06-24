@@ -74,9 +74,26 @@ class ToolSetter:
         self.last_result = None
         self.probe_triggered = None
 
-        self.gcode.register_command("QUERY_TOOL_SETTER", self.cmd_QUERY_TOOL_SETTER)
-        self.gcode.register_command("CALIBRATE_TOOL_SETTER", self.cmd_CALIBRATE_TOOL_SETTER)
-        self.gcode.register_command("TOUCH_OFF_TOOL", self.cmd_TOUCH_OFF_TOOL)
+        self.gcode.register_command(
+            "QUERY_TOOL_SETTER",
+            self.cmd_QUERY_TOOL_SETTER,
+            desc="Report fixed tool setter input and calibration state",
+        )
+        self.gcode.register_command(
+            "CALIBRATE_SETTER_Z",
+            self.cmd_CALIBRATE_SETTER_Z,
+            desc="Measure the fixed setter after stock Z0 is set",
+        )
+        self.gcode.register_command(
+            "SET_BIT_Z",
+            self.cmd_SET_BIT_Z,
+            desc="Measure the current bit on the fixed setter and update work Z",
+        )
+        self.gcode.register_command(
+            "TOOL_SETTER_ACCURACY",
+            self.cmd_TOOL_SETTER_ACCURACY,
+            desc="Probe the fixed setter repeatedly and report repeatability",
+        )
 
         self.printer.register_event_handler("klippy:ready", self._handle_ready)
 
@@ -241,7 +258,7 @@ class ToolSetter:
             )
         self._move_z(destination, speed)
 
-    def _probe(self, gcmd):
+    def _probe(self, gcmd, report_samples=True):
         self._require_safe(gcmd)
         self._move_to_setter(gcmd)
         toolhead = self.printer.lookup_object("toolhead")
@@ -299,7 +316,7 @@ class ToolSetter:
 
         raw_contact_z = sum(readings) / len(readings)
         contact_z = raw_contact_z + self.trigger_offset
-        if len(readings) > 1:
+        if report_samples and len(readings) > 1:
             gcmd.respond_info(
                 "Tool setter samples: %s\nmin=%.6f max=%.6f range=%.6f avg=%.6f"
                 % (
@@ -322,6 +339,28 @@ class ToolSetter:
             "retracted_z": toolhead.get_position()[2],
         }
         return contact_z
+
+    def _format_accuracy(self, readings):
+        ordered = sorted(readings)
+        count = len(ordered)
+        average = sum(ordered) / count
+        if count % 2:
+            median = ordered[count // 2]
+        else:
+            median = (ordered[count // 2 - 1] + ordered[count // 2]) / 2.0
+        variance = sum((value - average) ** 2 for value in ordered) / count
+        return (
+            "tool setter accuracy results: maximum %.6f, minimum %.6f, "
+            "range %.6f, average %.6f, median %.6f, standard deviation %.6f"
+            % (
+                max(ordered),
+                min(ordered),
+                max(ordered) - min(ordered),
+                average,
+                median,
+                math.sqrt(variance),
+            )
+        )
 
     def _active_wcs(self, gcmd):
         wcs = self.printer.lookup_object("work_coordinate_systems", None)
@@ -352,7 +391,7 @@ class ToolSetter:
             )
         )
 
-    def cmd_CALIBRATE_TOOL_SETTER(self, gcmd):
+    def cmd_CALIBRATE_SETTER_Z(self, gcmd):
         wcs = self._active_wcs(gcmd)
         contact_z = self._probe(gcmd)
         wcs_z_offset = float(wcs.wcs[wcs.active_wcs][2])
@@ -365,14 +404,14 @@ class ToolSetter:
         }
         self._persist()
         gcmd.respond_info(
-            "Tool setter calibrated for %s: contact Z=%.6f, setter work Z=%.6f"
+            "Setter Z calibrated for %s: contact Z=%.6f, setter work Z=%.6f"
             % (wcs.active_wcs, contact_z, setter_work_z)
         )
 
-    def cmd_TOUCH_OFF_TOOL(self, gcmd):
+    def cmd_SET_BIT_Z(self, gcmd):
         wcs = self._active_wcs(gcmd)
         if self.calibration is None:
-            raise gcmd.error("Run CALIBRATE_TOOL_SETTER before TOUCH_OFF_TOOL")
+            raise gcmd.error("Run CALIBRATE_SETTER_Z before SET_BIT_Z")
         if self.calibration["active_wcs"] != wcs.active_wcs:
             raise gcmd.error(
                 "Tool setter was calibrated for %s, but %s is active"
@@ -404,7 +443,7 @@ class ToolSetter:
         else:
             action = "not updated; add APPLY=1 or SET_ZERO=1 to apply"
         gcmd.respond_info(
-            "Tool touch-off for %s: contact Z=%.6f, target WCS Z offset=%.6f, "
+            "Bit Z for %s: contact Z=%.6f, target WCS Z offset=%.6f, "
             "delta=%.6f (%s)"
             % (
                 wcs.active_wcs,
@@ -414,6 +453,13 @@ class ToolSetter:
                 action,
             )
         )
+
+    def cmd_TOOL_SETTER_ACCURACY(self, gcmd):
+        self._probe(gcmd, report_samples=False)
+        readings = (self.last_result or {}).get("samples", [])
+        if not readings:
+            raise gcmd.error("No tool setter accuracy samples captured")
+        gcmd.respond_info(self._format_accuracy(readings))
 
     def get_status(self, eventtime=None):
         return {

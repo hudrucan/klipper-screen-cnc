@@ -168,6 +168,9 @@ spindle_object: output_pin spindle
 
 The fixed setter can use a different input pin from the XY touch probe. It is
 intended for manual setup and UI buttons, not automatic mid-job tool changes.
+`setter_x`, `setter_y`, and `safe_z` are machine coordinates. They are not
+affected by the active G54-G59 WCS, and the module does not switch into `G53`
+or leave the controller in machine-coordinate mode.
 
 Typical setup:
 
@@ -176,17 +179,18 @@ Typical setup:
 2. With the same reference probe still installed, run:
 
    ```gcode
-   CALIBRATE_TOOL_SETTER
+   CALIBRATE_SETTER_Z
    ```
 
-   This moves to the configured `setter_x`/`setter_y`, probes down, and stores
-   the fixed setter's Z height in the active WCS.
+   This measures the fixed setter after stock Z0 is set. It moves to the
+   configured machine-space `setter_x`/`setter_y`, probes down, and stores the
+   fixed setter's Z height in the active WCS.
 
 3. Replace the probe with the cutting bit.
 4. Probe the bit against the fixed setter:
 
    ```gcode
-   TOUCH_OFF_TOOL
+   SET_BIT_Z
    ```
 
    By default this only reports the calculated WCS Z adjustment.
@@ -194,7 +198,7 @@ Typical setup:
 5. Apply the adjustment after verifying the result:
 
    ```gcode
-   TOUCH_OFF_TOOL APPLY=1
+   SET_BIT_Z APPLY=1
    ```
 
    `SET_ZERO=1` is accepted as an alias for UI consistency.
@@ -203,18 +207,36 @@ Available commands:
 
 ```gcode
 QUERY_TOOL_SETTER
-CALIBRATE_TOOL_SETTER
-TOUCH_OFF_TOOL
+TOOL_SETTER_ACCURACY
+CALIBRATE_SETTER_Z
+SET_BIT_Z
 ```
 
 Useful command overrides:
 
 ```gcode
-CALIBRATE_TOOL_SETTER X=186.5 Y=246.5 SAFE_Z=60
-TOUCH_OFF_TOOL SAMPLES=3 APPLY=1
+TOOL_SETTER_ACCURACY SAMPLES=10
+CALIBRATE_SETTER_Z X=186.5 Y=246.5 SAFE_Z=60
+SET_BIT_Z SAMPLES=3 APPLY=1
 ```
 
-The module requires homed XYZ, a selected G54-G59 WCS, spindle off, no active
-print, and an open setter input before probing. It travels in machine
-coordinates, lifts to `SAFE_Z`, moves to the fixed setter XY, probes downward,
-and leaves Z retracted.
+The `X`, `Y`, and `SAFE_Z` overrides are also machine coordinates.
+
+Command purpose:
+
+- `QUERY_TOOL_SETTER`: report whether the setter input is open or triggered,
+  plus the saved calibration state.
+- `TOOL_SETTER_ACCURACY`: repeatedly probe the fixed setter and report
+  min/max/range/average/median/standard deviation. It does not change WCS or
+  calibration.
+- `CALIBRATE_SETTER_Z`: after stock Z0 has been set with the reference probe,
+  measure where the fixed setter is relative to the active WCS.
+- `SET_BIT_Z`: after changing to a cutting bit, measure the bit on the fixed
+  setter and optionally update active WCS Z with `APPLY=1`.
+
+The module requires homed XYZ, spindle off, no active print, and an open setter
+input before probing. `CALIBRATE_SETTER_Z` and `SET_BIT_Z` also require a
+selected G54-G59 WCS. It travels in machine coordinates, lifts to `SAFE_Z`,
+moves to the fixed setter XY, probes downward, and leaves Z retracted. The
+active WCS is preserved for all travel moves; only `SET_BIT_Z APPLY=1` changes
+the active WCS Z offset.
