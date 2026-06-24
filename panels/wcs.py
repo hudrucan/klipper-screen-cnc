@@ -191,16 +191,11 @@ class Panel(ScreenPanel):
 
         self.labels["active"] = self._status_label("Active G54")
         self.labels["position"] = self._status_label("Work X --  Y --  Z --")
-        machine_button = self._gtk.Button(label="G53", style="color4")
-        machine_button.connect("clicked", self.select_machine_coordinates)
-        machine_button.get_style_context().add_class("buttons_slim")
-        self.buttons["G53"] = machine_button
 
         status = Gtk.Grid(column_homogeneous=True, hexpand=True)
         status.set_column_spacing(8)
         status.attach(self.labels["active"], 0, 0, 1, 1)
         status.attach(self.labels["position"], 1, 0, 1, 1)
-        status.attach(machine_button, 2, 0, 1, 1)
 
         self.machine_map = MachineMap(self)
 
@@ -242,13 +237,18 @@ class Panel(ScreenPanel):
 
         zero_grid = Gtk.Grid(column_homogeneous=True)
         zero_grid.set_column_spacing(8)
+        machine_button = self._gtk.Button(label="G53", style="color4")
+        machine_button.connect("clicked", self.select_machine_coordinates)
+        machine_button.get_style_context().add_class("buttons_slim")
+        self.buttons["G53"] = machine_button
+        zero_grid.attach(machine_button, 0, 0, 1, 1)
         for index, axis in enumerate((*self.axes, "ALL")):
-            label = f"Zero {axis.title()}" if axis == "ALL" else f"Zero {axis}"
-            button = self._gtk.Button("hashtag", label, f"color{index % 4 + 1}")
+            label = "XYZ0" if axis == "ALL" else f"{axis}0"
+            button = self._gtk.Button(label=label)
             button.connect("clicked", self.confirm_zero, axis)
             button.get_style_context().add_class("buttons_slim")
             self.buttons[f"zero_{axis}"] = button
-            zero_grid.attach(button, index, 0, 1, 1)
+            zero_grid.attach(button, index + 1, 0, 1, 1)
 
         workspace = Gtk.Grid(hexpand=True, vexpand=True)
         workspace.set_column_spacing(10)

@@ -40,7 +40,7 @@ class Panel(ScreenPanel):
             "z+": self._gtk.Button("z-farther", "Z+", "color3"),
             "z-": self._gtk.Button("z-closer", "Z-", "color3"),
             "xy_zero": self._gtk.Button(label="XY0"),
-            "tool_setter": self._gtk.Button(label="Set"),
+            "tool_setter": self._gtk.Button(label="Setter"),
             "home": self._gtk.Button("home", _("Home"), "color4"),
             "motors_off": self._gtk.Button("motor-off", _("Disable Motors"), "color4"),
         }
