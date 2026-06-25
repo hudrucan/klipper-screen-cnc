@@ -320,7 +320,7 @@ class Panel(ScreenPanel):
             xalign=0,
         )
         checklist.get_style_context().add_class("cnc-confirm-checklist")
-        params, entries, keyboard_box = self._confirm_param_fields(name)
+        params, entries = self._confirm_param_fields(name)
         preview_script = self._build_confirm_script(name, script, entries)
         command = Gtk.Label(label=f"<tt>{preview_script}</tt>", xalign=0, wrap=True, use_markup=True)
         command.get_style_context().add_class("cnc-confirm-script")
@@ -341,7 +341,7 @@ class Panel(ScreenPanel):
         if self._screen.confirm is not None:
             self._gtk.remove_dialog(self._screen.confirm)
         self._screen.confirm = self._gtk.Dialog(
-            title, buttons, wrapper, callback, name, script, entries, keyboard_box
+            title, buttons, wrapper, callback, name, script, entries
         )
         run_button = self._screen.confirm.get_widget_for_response(Gtk.ResponseType.OK)
         if entries:
@@ -364,33 +364,46 @@ class Panel(ScreenPanel):
             "center_xy": (("DISTANCE_X", "Stock X width"), ("DISTANCE_Y", "Stock Y width")),
         }.get(name)
         if not specs:
-            return None, {}, None
+            return None, {}
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         label = Gtk.Label(label="Required stock span", xalign=0)
         label.get_style_context().add_class("cnc-probe-detail")
-        grid = Gtk.Grid(column_homogeneous=True)
+        grid = Gtk.Grid(column_homogeneous=False)
         grid.set_column_spacing(8)
+        grid.set_row_spacing(6)
         entries = {}
-        for index, (key, placeholder) in enumerate(specs):
-            entry = Gtk.Entry(placeholder_text=placeholder)
+        for row, (key, placeholder) in enumerate(specs):
+            row_label = Gtk.Label(label=placeholder, xalign=0)
+            row_label.get_style_context().add_class("cnc-probe-detail")
+            entry = Gtk.Entry(text="")
+            entry.set_width_chars(7)
+            entry.set_alignment(0.5)
             entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
-            entry.connect("touch-event", self._show_confirm_keyboard, box)
-            entry.connect("button-press-event", self._show_confirm_keyboard, box)
-            entry.connect("focus-out-event", self._remove_confirm_keyboard, box)
             entries[key] = entry
-            grid.attach(entry, index, 0, 1, 1)
+            grid.attach(row_label, 0, row, 1, 1)
+            for col, step in enumerate((-10, -1)):
+                button = self._gtk.Button(label=str(step))
+                button.get_style_context().add_class("buttons_slim")
+                button.connect("clicked", self._adjust_confirm_entry, entry, step)
+                grid.attach(button, col + 1, row, 1, 1)
+            grid.attach(entry, 3, row, 1, 1)
+            for col, step in enumerate((1, 10)):
+                button = self._gtk.Button(label=f"+{step}")
+                button.get_style_context().add_class("buttons_slim")
+                button.connect("clicked", self._adjust_confirm_entry, entry, step)
+                grid.attach(button, col + 4, row, 1, 1)
         box.pack_start(label, False, False, 0)
         box.pack_start(grid, False, False, 0)
-        return box, entries, box
+        return box, entries
 
-    def _show_confirm_keyboard(self, entry, event, box):
-        self._screen.show_keyboard(entry, event, box)
-        return False
-
-    def _remove_confirm_keyboard(self, entry, event, box):
-        self._screen.remove_keyboard(entry, event, box)
-        return False
+    def _adjust_confirm_entry(self, widget, entry, step):
+        try:
+            current = float(entry.get_text().strip() or 0)
+        except ValueError:
+            current = 0
+        value = max(0, current + step)
+        entry.set_text("%g" % value)
 
     def _update_confirm_preview(self, entry, name, script, entries, command, run_button):
         command.set_label(
@@ -409,19 +422,15 @@ class Panel(ScreenPanel):
         parts.append("SET_ZERO=1")
         return " ".join(parts)
 
-    def _run_confirmed_script(self, dialog, response_id, name, script, entries, keyboard_box):
+    def _run_confirmed_script(self, dialog, response_id, name, script, entries):
         if response_id == Gtk.ResponseType.OK:
             if name in {"center_x", "center_y", "center_xy"} and not self._valid_confirm_params(entries):
                 self._screen.show_popup_message("Enter a positive stock span before probing")
                 return
             final_script = self._build_confirm_script(name, script, entries)
-            if keyboard_box is not None:
-                self._screen.remove_keyboard(box=keyboard_box)
             self._gtk.remove_dialog(dialog)
             self._screen._send_action(None, "printer.gcode.script", {"script": final_script})
             return
-        if keyboard_box is not None:
-            self._screen.remove_keyboard(box=keyboard_box)
         self._gtk.remove_dialog(dialog)
 
     @staticmethod
