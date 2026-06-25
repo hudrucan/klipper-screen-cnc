@@ -272,16 +272,6 @@ class Panel(ScreenPanel):
         if script.startswith("PANEL:"):
             self._screen.show_panel(script.split(":", 1)[1])
             return
-        if name == "center_x":
-            script = f"{script} DISTANCE={self._axis_span(0):.3f} SET_ZERO=1"
-        elif name == "center_y":
-            script = f"{script} DISTANCE={self._axis_span(1):.3f} SET_ZERO=1"
-        elif name == "center_xy":
-            script = (
-                f"{script} DISTANCE_X={self._axis_span(0):.3f} "
-                f"DISTANCE_Y={self._axis_span(1):.3f} SET_ZERO=1"
-            )
-
         if confirm:
             self.confirm_cnc_action(widget, name, script)
         else:
@@ -308,12 +298,12 @@ class Panel(ScreenPanel):
             title,
             badge,
             message,
+            name,
             script,
             self._run_confirmed_script,
-            script,
         )
 
-    def _show_cnc_confirm(self, title, badge, message, script, callback, *args):
+    def _show_cnc_confirm(self, title, badge, message, name, script, callback):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         content.set_size_request(min(int(self._screen.width * 0.78), 780), -1)
         content.set_margin_start(18)
@@ -330,13 +320,19 @@ class Panel(ScreenPanel):
             xalign=0,
         )
         checklist.get_style_context().add_class("cnc-confirm-checklist")
-        command = Gtk.Label(label=f"<tt>{script}</tt>", xalign=0, wrap=True, use_markup=True)
+        params, entries = self._confirm_param_fields(name)
+        preview_script = self._build_confirm_script(name, script, entries)
+        command = Gtk.Label(label=f"<tt>{preview_script}</tt>", xalign=0, wrap=True, use_markup=True)
         command.get_style_context().add_class("cnc-confirm-script")
         content.pack_start(heading, False, False, 0)
         content.pack_start(badge_label, False, False, 0)
         content.pack_start(note, False, False, 0)
+        if params is not None:
+            content.pack_start(params, False, False, 0)
         content.pack_start(checklist, False, False, 0)
         content.pack_start(command, False, False, 0)
+        for entry in entries.values():
+            entry.connect("changed", self._update_confirm_preview, name, script, entries, command)
         wrapper = Gtk.Alignment.new(0.5, 0.5, 0, 0)
         wrapper.set_vexpand(True)
         wrapper.add(content)
@@ -346,17 +342,70 @@ class Panel(ScreenPanel):
         ]
         if self._screen.confirm is not None:
             self._gtk.remove_dialog(self._screen.confirm)
-        self._screen.confirm = self._gtk.Dialog(title, buttons, wrapper, callback, *args)
+        self._screen.confirm = self._gtk.Dialog(title, buttons, wrapper, callback, name, script, entries)
 
-    def _run_confirmed_script(self, dialog, response_id, script):
-        self._gtk.remove_dialog(dialog)
+    def _confirm_param_fields(self, name):
+        specs = {
+            "center_x": (("DISTANCE", "Stock X width"),),
+            "center_y": (("DISTANCE", "Stock Y width"),),
+            "center_xy": (("DISTANCE_X", "Stock X width"), ("DISTANCE_Y", "Stock Y width")),
+        }.get(name)
+        if not specs:
+            return None, {}
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        label = Gtk.Label(label="Required stock span", xalign=0)
+        label.get_style_context().add_class("cnc-probe-detail")
+        grid = Gtk.Grid(column_homogeneous=True)
+        grid.set_column_spacing(8)
+        entries = {}
+        for index, (key, placeholder) in enumerate(specs):
+            entry = Gtk.Entry(placeholder_text=placeholder)
+            entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
+            entry.connect("touch-event", self._screen.show_keyboard)
+            entry.connect("button-press-event", self._screen.show_keyboard)
+            entry.connect("focus-out-event", self._screen.remove_keyboard)
+            entries[key] = entry
+            grid.attach(entry, index, 0, 1, 1)
+        box.pack_start(label, False, False, 0)
+        box.pack_start(grid, False, False, 0)
+        return box, entries
+
+    def _update_confirm_preview(self, entry, name, script, entries, command):
+        command.set_label(
+            f"<tt>{self._build_confirm_script(name, script, entries)}</tt>"
+        )
+
+    def _build_confirm_script(self, name, script, entries):
+        if name not in {"center_x", "center_y", "center_xy"}:
+            return script
+        parts = [script]
+        for key, entry in entries.items():
+            value = entry.get_text().strip()
+            if value:
+                parts.append(f"{key}={value}")
+        parts.append("SET_ZERO=1")
+        return " ".join(parts)
+
+    def _run_confirmed_script(self, dialog, response_id, name, script, entries):
         if response_id == Gtk.ResponseType.OK:
-            self._screen._send_action(None, "printer.gcode.script", {"script": script})
+            if name in {"center_x", "center_y", "center_xy"} and not self._valid_confirm_params(entries):
+                self._screen.show_popup_message("Enter a positive stock span before probing")
+                return
+            final_script = self._build_confirm_script(name, script, entries)
+            self._gtk.remove_dialog(dialog)
+            self._screen._send_action(None, "printer.gcode.script", {"script": final_script})
+            return
+        self._gtk.remove_dialog(dialog)
 
-    def _axis_span(self, axis):
-        axis_min = self._printer.get_stat("toolhead", "axis_minimum") or [0, 0, 0]
-        axis_max = self._printer.get_stat("toolhead", "axis_maximum") or [0, 0, 0]
-        try:
-            return max(float(axis_max[axis]) - float(axis_min[axis]), 1.0)
-        except (TypeError, ValueError, IndexError):
-            return 1.0
+    @staticmethod
+    def _valid_confirm_params(entries):
+        if not entries:
+            return True
+        for entry in entries.values():
+            try:
+                if float(entry.get_text().strip()) <= 0:
+                    return False
+            except ValueError:
+                return False
+        return True
