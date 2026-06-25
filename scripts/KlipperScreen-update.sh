@@ -8,16 +8,7 @@ KSENV="${KLIPPERSCREEN_VENV:-${HOME}/.klipper-screen-env}"
 KLIPPER_PATH="${KLIPPER_PATH:-${HOME}/klipper}"
 INSTALL_KLIPPER_EXTRAS="${INSTALL_KLIPPER_EXTRAS:-1}"
 
-if [ -n "$KLIPPERSCREEN_SERVICE" ]; then
-    SERVICE="$KLIPPERSCREEN_SERVICE"
-else
-    SERVICE="klipper-screen.service"
-    if command -v systemctl >/dev/null 2>&1 \
-        && systemctl list-unit-files klipper-screen-cnc.service \
-            | grep -q '^klipper-screen-cnc\.service'; then
-        SERVICE="klipper-screen-cnc.service"
-    fi
-fi
+SERVICE="${KLIPPERSCREEN_SERVICE:-klipper-screen.service}"
 
 echo "Updating Klipper Screen CNC dependencies"
 

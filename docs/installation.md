@@ -89,8 +89,8 @@ install_script: scripts/KlipperScreen-update.sh
 
 Do not set `managed_services` unless your systemd unit really exists under that
 name. The bundled update script copies Klipper CNC extras automatically when it
-can find the Klipper checkout, then restarts `klipper-screen-cnc.service` when
-that unit exists, otherwise it falls back to `klipper-screen.service`.
+can find the Klipper checkout, then restarts `klipper-screen.service`.
+Set `KLIPPERSCREEN_SERVICE` only if your systemd unit uses a different name.
 
 Restart Moonraker after editing its config:
 

@@ -12,7 +12,7 @@ class SurfaceMap(Gtk.DrawingArea):
         self.panel = panel
         self.set_hexpand(True)
         self.set_vexpand(False)
-        self.set_size_request(260, 220)
+        self.set_size_request(260, 170)
         self.connect("draw", self.draw_map)
 
     def draw_map(self, widget, ctx):
@@ -44,12 +44,18 @@ class SurfaceMap(Gtk.DrawingArea):
 
         label_size = min(max(width * 0.014, 12), 15)
         marker_radius = min(max(width * 0.006, 5), 7)
-        left = 36
-        top = 22
-        plot_w = width - left * 2
-        plot_h = height - top * 2
+        frame_left = 18
+        frame_top = 12
+        frame_w = width - frame_left * 2
+        frame_h = height - frame_top * 2
+        label_pad_x = min(max(width * 0.075, 52), 78)
+        label_pad_y = min(max(height * 0.18, 28), 40)
+        left = frame_left + label_pad_x
+        top = frame_top + label_pad_y
+        plot_w = max(frame_w - label_pad_x * 2, 1)
+        plot_h = max(frame_h - label_pad_y * 2, 1)
         ctx.set_source_rgba(1, 1, 1, 0.10)
-        ctx.rectangle(left, top, plot_w, plot_h)
+        ctx.rectangle(frame_left, frame_top, frame_w, frame_h)
         ctx.stroke()
 
         by_name = {point.get("name"): point for point in points}
@@ -227,8 +233,8 @@ class Panel(ScreenPanel):
         content.pack_start(self.labels["detail"], False, False, 0)
         content.pack_start(self.map, False, False, 0)
         content.pack_start(options, False, False, 0)
-        content.pack_start(fields, False, False, 0)
         content.pack_start(actions, False, False, 0)
+        content.pack_start(fields, False, False, 0)
         scroll = self._gtk.ScrolledWindow()
         scroll.get_style_context().add_class("gcode-list-scroll")
         scroll.add(content)
