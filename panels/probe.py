@@ -11,6 +11,7 @@ class Panel(ScreenPanel):
         ("stock_z", "Stock Z0", "FIND_SURFACE_Z SET_ZERO=1", True, "Probe stock surface and set WCS Z0"),
         ("center_xy", "Center XY", "FIND_CENTER_XY", True, "Probe X/Y edges and set center XY0"),
         ("bore", "Bore XY", "PROBE_BORE SET_ZERO=1", True, "Probe a bore and set center XY0"),
+        ("surface", "Surface", "PANEL:surface_measure", False, "Measure and view surface tilt"),
         ("query_touch", "Check", "QUERY_TOUCH_PROBE", False, "Report touch probe state"),
         ("x_min", "X Min", "FIND_EDGE_X_NEG SET_ZERO=1", True, "Probe X-min edge and set WCS X0"),
         ("x_max", "X Max", "FIND_EDGE_X_POS SET_ZERO=1", True, "Probe X-max edge and set WCS X0"),
@@ -256,6 +257,8 @@ class Panel(ScreenPanel):
                 self.buttons[name].set_sensitive(
                     (has_touch if name == "query_touch" else has_setter) and ready
                 )
+            elif name == "surface":
+                self.buttons[name].set_sensitive(has_touch and ready)
             elif name in {item[0] for item in self.touch_actions}:
                 self.buttons[name].set_sensitive(has_touch and ready and xyz_homed)
             elif name == "calibrate":
@@ -266,6 +269,9 @@ class Panel(ScreenPanel):
                 )
 
     def run_action(self, widget, name, script, confirm):
+        if script.startswith("PANEL:"):
+            self._screen.show_panel(script.split(":", 1)[1])
+            return
         if name == "center_x":
             script = f"{script} DISTANCE={self._axis_span(0):.3f} SET_ZERO=1"
         elif name == "center_y":

@@ -7,6 +7,7 @@
 # before relying on these commands near a workpiece.
 
 import logging
+import math
 
 DIRECTIONS = {
     "X+": (0, 1),
@@ -75,6 +76,7 @@ class TouchProbe:
         self.last_result = None
         self.last_command = None
         self.probe_triggered = None
+        self.surface_result = None
 
         commands = {
             "QUERY_TOUCH_PROBE": self.cmd_QUERY_TOUCH_PROBE,
@@ -93,6 +95,7 @@ class TouchProbe:
             "FIND_CENTER_Y": self.cmd_FIND_CENTER_Y,
             "FIND_CENTER_XY": self.cmd_FIND_CENTER_XY,
             "PROBE_BORE": self.cmd_PROBE_BORE,
+            "MEASURE_SURFACE_TILT": self.cmd_MEASURE_SURFACE_TILT,
         }
         for name, handler in commands.items():
             self.gcode.register_command(name, handler)
@@ -147,6 +150,14 @@ class TouchProbe:
         toolhead = self.printer.lookup_object("toolhead")
         position = list(toolhead.get_position())
         position[axis] = coordinate
+        toolhead.manual_move(position, speed)
+        toolhead.wait_moves()
+
+    def _move_xy(self, x, y, speed):
+        toolhead = self.printer.lookup_object("toolhead")
+        position = list(toolhead.get_position())
+        position[0] = x
+        position[1] = y
         toolhead.manual_move(position, speed)
         toolhead.wait_moves()
 
@@ -262,6 +273,24 @@ class TouchProbe:
         surface[2] += self.trigger_offset
         return surface
 
+    def _active_wcs(self, gcmd):
+        wcs = self.printer.lookup_object("work_coordinate_systems", None)
+        if wcs is None:
+            raise gcmd.error("COORD=WCS requires [work_coordinate_systems]")
+        if wcs.machine_mode:
+            raise gcmd.error("COORD=WCS requires active G54-G59")
+        if not wcs.applied:
+            raise gcmd.error("COORD=WCS requires homed and applied WCS")
+        return wcs
+
+    @staticmethod
+    def _upper_param(gcmd, name, default):
+        return str(gcmd.get(name, default)).strip().upper()
+
+    @staticmethod
+    def _finite(value):
+        return math.isfinite(float(value))
+
     def _z_hop_up(self, gcmd):
         hop = gcmd.get_float("Z_HOP", self.z_hop, above=0.0)
         speed = gcmd.get_float(
@@ -340,6 +369,201 @@ class TouchProbe:
                 result[2],
                 surface[2],
                 ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
+            )
+        )
+
+    def _surface_bounds(self, gcmd):
+        has_width = gcmd.get_float("WIDTH", None) is not None
+        has_height = gcmd.get_float("HEIGHT", None) is not None
+        explicit = {
+            name: gcmd.get_float(name, None)
+            for name in ("X_MIN", "X_MAX", "Y_MIN", "Y_MAX")
+        }
+        has_explicit = any(value is not None for value in explicit.values())
+        if has_explicit and not all(value is not None for value in explicit.values()):
+            raise gcmd.error("Explicit surface bounds require X_MIN X_MAX Y_MIN Y_MAX")
+
+        coord = self._upper_param(gcmd, "COORD", "")
+        if not coord:
+            coord = "WCS" if has_width or has_height or has_explicit else "MACHINE"
+        if coord not in ("MACHINE", "WCS"):
+            raise gcmd.error("COORD must be MACHINE or WCS")
+
+        if has_width != has_height:
+            raise gcmd.error("WIDTH and HEIGHT must be provided together")
+
+        if has_explicit:
+            bounds = {
+                "x_min": float(explicit["X_MIN"]),
+                "x_max": float(explicit["X_MAX"]),
+                "y_min": float(explicit["Y_MIN"]),
+                "y_max": float(explicit["Y_MAX"]),
+            }
+            margin = gcmd.get_float("MARGIN", 0.0, minval=0.0)
+        elif has_width:
+            if coord != "WCS":
+                raise gcmd.error("WIDTH/HEIGHT surface measuring requires COORD=WCS")
+            margin = gcmd.get_float("MARGIN", 5.0, minval=0.0)
+            width = gcmd.get_float("WIDTH", above=0.0)
+            height = gcmd.get_float("HEIGHT", above=0.0)
+            bounds = {
+                "x_min": margin,
+                "x_max": width - margin,
+                "y_min": margin,
+                "y_max": height - margin,
+            }
+        elif coord == "MACHINE":
+            margin = gcmd.get_float("MARGIN", 10.0, minval=0.0)
+            x_min, x_max = self._limits(0)
+            y_min, y_max = self._limits(1)
+            bounds = {
+                "x_min": float(x_min) + margin,
+                "x_max": float(x_max) - margin,
+                "y_min": float(y_min) + margin,
+                "y_max": float(y_max) - margin,
+            }
+        else:
+            raise gcmd.error(
+                "COORD=WCS requires WIDTH/HEIGHT or X_MIN/X_MAX/Y_MIN/Y_MAX"
+            )
+
+        if bounds["x_min"] >= bounds["x_max"] or bounds["y_min"] >= bounds["y_max"]:
+            raise gcmd.error("Surface bounds are too small after margin")
+        if not all(self._finite(value) for value in bounds.values()):
+            raise gcmd.error("Invalid surface bounds")
+        return coord, margin, bounds
+
+    def _surface_points(self, gcmd, bounds):
+        pattern = self._upper_param(gcmd, "PATTERN", "CORNERS_4")
+        if pattern in ("4", "CORNERS", "CORNERS4"):
+            pattern = "CORNERS_4"
+        elif pattern in ("5", "CROSS", "CROSS5"):
+            pattern = "CROSS_5"
+        if pattern == "CORNERS_4":
+            points = (
+                ("FL", bounds["x_min"], bounds["y_min"]),
+                ("FR", bounds["x_max"], bounds["y_min"]),
+                ("RL", bounds["x_min"], bounds["y_max"]),
+                ("RR", bounds["x_max"], bounds["y_max"]),
+            )
+        elif pattern == "CROSS_5":
+            center_x = (bounds["x_min"] + bounds["x_max"]) / 2.0
+            center_y = (bounds["y_min"] + bounds["y_max"]) / 2.0
+            points = (
+                ("CENTER", center_x, center_y),
+                ("FRONT", center_x, bounds["y_min"]),
+                ("RIGHT", bounds["x_max"], center_y),
+                ("REAR", center_x, bounds["y_max"]),
+                ("LEFT", bounds["x_min"], center_y),
+            )
+        else:
+            raise gcmd.error("PATTERN must be CORNERS_4 or CROSS_5")
+        return pattern, points
+
+    def _to_machine_xy(self, gcmd, coord, x, y):
+        if coord == "MACHINE":
+            return x, y
+        wcs = self._active_wcs(gcmd)
+        offset = wcs.wcs[wcs.active_wcs]
+        return x + float(offset[0]), y + float(offset[1])
+
+    def _probe_surface_point(self, gcmd, coord, name, x, y):
+        fast_speed = gcmd.get_float("FAST_SPEED", self.fast_speed, above=0.0)
+        machine_x, machine_y = self._to_machine_xy(gcmd, coord, x, y)
+        x_min, x_max = self._limits(0)
+        y_min, y_max = self._limits(1)
+        if not (x_min <= machine_x <= x_max and y_min <= machine_y <= y_max):
+            raise gcmd.error("Surface point %s is outside machine limits" % (name,))
+        self._z_hop_up(gcmd)
+        self._move_xy(machine_x, machine_y, fast_speed)
+        hit = self._probe(gcmd, "Z-")
+        surface = self._surface_z(hit)
+        return {
+            "name": name,
+            "x": float(x),
+            "y": float(y),
+            "machine_x": float(machine_x),
+            "machine_y": float(machine_y),
+            "z": float(surface[2]),
+        }
+
+    def _surface_summary(self, pattern, points):
+        z_values = [point["z"] for point in points]
+        minimum = min(z_values)
+        maximum = max(z_values)
+        low = min(points, key=lambda point: point["z"])
+        high = max(points, key=lambda point: point["z"])
+        summary = {
+            "min_z": minimum,
+            "max_z": maximum,
+            "range": maximum - minimum,
+            "average": sum(z_values) / len(z_values),
+            "low_point": low["name"],
+            "high_point": high["name"],
+        }
+        by_name = {point["name"]: point for point in points}
+        if pattern == "CORNERS_4":
+            summary.update(
+                {
+                    "front_delta": by_name["FR"]["z"] - by_name["FL"]["z"],
+                    "rear_delta": by_name["RR"]["z"] - by_name["RL"]["z"],
+                    "left_delta": by_name["RL"]["z"] - by_name["FL"]["z"],
+                    "right_delta": by_name["RR"]["z"] - by_name["FR"]["z"],
+                    "twist": (
+                        by_name["RR"]["z"]
+                        + by_name["FL"]["z"]
+                        - by_name["FR"]["z"]
+                        - by_name["RL"]["z"]
+                    ),
+                }
+            )
+        elif pattern == "CROSS_5":
+            edges = [
+                by_name[name]["z"] for name in ("FRONT", "RIGHT", "REAR", "LEFT")
+            ]
+            summary.update(
+                {
+                    "x_delta": by_name["RIGHT"]["z"] - by_name["LEFT"]["z"],
+                    "y_delta": by_name["REAR"]["z"] - by_name["FRONT"]["z"],
+                    "center_error": by_name["CENTER"]["z"] - sum(edges) / len(edges),
+                }
+            )
+        return summary
+
+    def cmd_MEASURE_SURFACE_TILT(self, gcmd):
+        self._require_safe(gcmd, "XYZ")
+        start = list(self.printer.lookup_object("toolhead").get_position())
+        coord, margin, bounds = self._surface_bounds(gcmd)
+        if coord == "WCS":
+            self._active_wcs(gcmd)
+        pattern, requested_points = self._surface_points(gcmd, bounds)
+        measured = [
+            self._probe_surface_point(gcmd, coord, name, x, y)
+            for name, x, y in requested_points
+        ]
+        self._z_hop_up(gcmd)
+        if gcmd.get_int("RETURN", 1, minval=0, maxval=1):
+            fast_speed = gcmd.get_float("FAST_SPEED", self.fast_speed, above=0.0)
+            self._move_xy(start[0], start[1], fast_speed)
+        summary = self._surface_summary(pattern, measured)
+        self.surface_result = {
+            "type": "tilt",
+            "coord": coord.lower(),
+            "pattern": pattern,
+            "bounds": bounds,
+            "margin": margin,
+            "points": measured,
+            "summary": summary,
+        }
+        self.last_command = gcmd.get_command()
+        gcmd.respond_info(
+            "Surface tilt %s %s: range %.6f, high %s, low %s"
+            % (
+                coord,
+                pattern,
+                summary["range"],
+                summary["high_point"],
+                summary["low_point"],
             )
         )
 
@@ -518,6 +742,7 @@ class TouchProbe:
             "triggered": self.probe_triggered,
             "last_command": self.last_command,
             "last_result": self.last_result,
+            "surface_result": self.surface_result,
         }
 
 

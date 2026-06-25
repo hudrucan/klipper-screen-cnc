@@ -1,0 +1,269 @@
+import gi
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
+from ks_includes.screen_panel import ScreenPanel
+
+
+class SurfaceMap(Gtk.DrawingArea):
+    def __init__(self, panel):
+        super().__init__()
+        self.panel = panel
+        self.set_hexpand(True)
+        self.set_vexpand(False)
+        self.set_size_request(260, 220)
+        self.connect("draw", self.draw_map)
+
+    def draw_map(self, widget, ctx):
+        result = self.panel.surface_result()
+        width = max(self.get_allocated_width(), 1)
+        height = max(self.get_allocated_height(), 1)
+        ctx.set_source_rgb(0.07, 0.09, 0.10)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+        ctx.set_source_rgba(1, 1, 1, 0.16)
+        ctx.rectangle(8, 8, width - 16, height - 16)
+        ctx.stroke()
+        if not result:
+            self._text(ctx, width / 2 - 58, height / 2, "No surface map", 16, 0.65)
+            return False
+
+        points = result.get("points") or []
+        if not points:
+            return False
+        bounds = result.get("bounds") or {}
+        x_min = float(bounds.get("x_min", min(point["x"] for point in points)))
+        x_max = float(bounds.get("x_max", max(point["x"] for point in points)))
+        y_min = float(bounds.get("y_min", min(point["y"] for point in points)))
+        y_max = float(bounds.get("y_max", max(point["y"] for point in points)))
+        z_values = [float(point["z"]) for point in points]
+        z_min = min(z_values)
+        z_max = max(z_values)
+        z_range = max(z_max - z_min, 0.000001)
+
+        left, top = 36, 30
+        plot_w, plot_h = width - 72, height - 62
+        ctx.set_source_rgba(1, 1, 1, 0.10)
+        ctx.rectangle(left, top, plot_w, plot_h)
+        ctx.stroke()
+
+        by_name = {point.get("name"): point for point in points}
+        if result.get("pattern") == "CROSS_5":
+            self._line(ctx, by_name, "FRONT", "REAR", left, top, plot_w, plot_h, x_min, x_max, y_min, y_max)
+            self._line(ctx, by_name, "LEFT", "RIGHT", left, top, plot_w, plot_h, x_min, x_max, y_min, y_max)
+        else:
+            for a, b in (("FL", "FR"), ("FR", "RR"), ("RR", "RL"), ("RL", "FL")):
+                self._line(ctx, by_name, a, b, left, top, plot_w, plot_h, x_min, x_max, y_min, y_max)
+
+        for point in points:
+            x, y = self._plot(point["x"], point["y"], left, top, plot_w, plot_h, x_min, x_max, y_min, y_max)
+            ratio = (float(point["z"]) - z_min) / z_range
+            ctx.set_source_rgb(0.28 + 0.72 * ratio, 0.55 - 0.25 * ratio, 1.0 - 0.78 * ratio)
+            ctx.arc(x, y, 22, 0, 6.283)
+            ctx.fill()
+            self._text(ctx, x - 18, y - 2, point.get("name", ""), 10, 1.0, dark=True)
+            self._text(ctx, x - 22, y + 12, f"{float(point['z']):+.3f}", 10, 1.0, dark=True)
+        return False
+
+    def _plot(self, x, y, left, top, width, height, x_min, x_max, y_min, y_max):
+        span_x = max(x_max - x_min, 0.000001)
+        span_y = max(y_max - y_min, 0.000001)
+        return (
+            left + (float(x) - x_min) / span_x * width,
+            top + height - (float(y) - y_min) / span_y * height,
+        )
+
+    def _line(self, ctx, by_name, a, b, left, top, width, height, x_min, x_max, y_min, y_max):
+        if a not in by_name or b not in by_name:
+            return
+        ax, ay = self._plot(by_name[a]["x"], by_name[a]["y"], left, top, width, height, x_min, x_max, y_min, y_max)
+        bx, by = self._plot(by_name[b]["x"], by_name[b]["y"], left, top, width, height, x_min, x_max, y_min, y_max)
+        ctx.set_source_rgba(1, 1, 1, 0.28)
+        ctx.set_line_width(2)
+        ctx.move_to(ax, ay)
+        ctx.line_to(bx, by)
+        ctx.stroke()
+
+    @staticmethod
+    def _text(ctx, x, y, text, size, alpha=1.0, dark=False):
+        ctx.set_source_rgba(0, 0, 0, alpha) if dark else ctx.set_source_rgba(1, 1, 1, alpha)
+        ctx.set_font_size(size)
+        ctx.move_to(x, y)
+        ctx.show_text(text)
+
+
+class Panel(ScreenPanel):
+    def __init__(self, screen, title):
+        super().__init__(screen, title or "Surface Measure")
+        self.coord = "WCS"
+        self.pattern = "CORNERS_4"
+        self.buttons = {}
+        self.entries = {}
+
+        self.labels["summary"] = self._status_label("No surface map")
+        self.labels["detail"] = Gtk.Label(label="Measure stock or machine area. Report only; no compensation.", xalign=0, wrap=True)
+        self.labels["detail"].get_style_context().add_class("cnc-probe-detail")
+
+        mode = Gtk.Grid(column_homogeneous=True)
+        mode.set_column_spacing(8)
+        for index, (key, label) in enumerate((("WCS", "Stock / WCS"), ("MACHINE", "Machine"))):
+            button = self._gtk.Button(label=label, style=f"color{index + 1}")
+            button.get_style_context().add_class("buttons_slim")
+            button.connect("clicked", self.set_coord, key)
+            self.buttons[f"coord_{key}"] = button
+            mode.attach(button, index, 0, 1, 1)
+
+        pattern = Gtk.Grid(column_homogeneous=True)
+        pattern.set_column_spacing(8)
+        for index, (key, label) in enumerate((("CORNERS_4", "Corners 4"), ("CROSS_5", "Cross 5"))):
+            button = self._gtk.Button(label=label, style=f"color{index + 3}")
+            button.get_style_context().add_class("buttons_slim")
+            button.connect("clicked", self.set_pattern, key)
+            self.buttons[f"pattern_{key}"] = button
+            pattern.attach(button, index, 0, 1, 1)
+
+        fields = Gtk.Grid(column_homogeneous=True)
+        fields.set_column_spacing(8)
+        fields.set_row_spacing(6)
+        for index, name in enumerate(("WIDTH", "HEIGHT", "X_MIN", "X_MAX", "Y_MIN", "Y_MAX", "MARGIN")):
+            entry = Gtk.Entry(placeholder_text=name.replace("_", " ").title())
+            entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
+            entry.connect("touch-event", self.show_keyboard)
+            entry.connect("button-press-event", self.show_keyboard)
+            entry.connect("focus-out-event", self._screen.remove_keyboard)
+            self.entries[name] = entry
+            fields.attach(entry, index % 2, index // 2, 1, 1)
+
+        actions = Gtk.Grid(column_homogeneous=True)
+        actions.set_column_spacing(8)
+        self.buttons["measure"] = self._gtk.Button(label="Measure", style="color4")
+        self.buttons["measure"].get_style_context().add_class("cnc-probe-action")
+        self.buttons["measure"].connect("clicked", self.measure)
+        actions.attach(self.buttons["measure"], 0, 0, 1, 1)
+        self.buttons["refresh"] = self._gtk.Button(label="Refresh Map", style="color3")
+        self.buttons["refresh"].get_style_context().add_class("cnc-probe-action")
+        self.buttons["refresh"].connect("clicked", self.update_status)
+        actions.attach(self.buttons["refresh"], 1, 0, 1, 1)
+
+        self.map = SurfaceMap(self)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        content.pack_start(self.labels["summary"], False, False, 0)
+        content.pack_start(self.labels["detail"], False, False, 0)
+        content.pack_start(mode, False, False, 0)
+        content.pack_start(pattern, False, False, 0)
+        content.pack_start(fields, False, False, 0)
+        content.pack_start(actions, False, False, 0)
+        content.pack_start(self.map, True, True, 0)
+        scroll = self._gtk.ScrolledWindow()
+        scroll.get_style_context().add_class("gcode-list-scroll")
+        scroll.add(content)
+        self.content.add(scroll)
+        self.update_toggles()
+
+    @staticmethod
+    def _status_label(text):
+        label = Gtk.Label(label=text)
+        label.get_style_context().add_class("cnc-status")
+        return label
+
+    def activate(self):
+        self.update_status()
+
+    def process_update(self, action, data):
+        if action == "notify_status_update" and "touch_probe" in data:
+            self.update_status()
+
+    def surface_result(self):
+        status = self._printer.get_stat("touch_probe") or {}
+        return status.get("surface_result")
+
+    def set_coord(self, widget, coord):
+        self.coord = coord
+        self.update_toggles()
+
+    def set_pattern(self, widget, pattern):
+        self.pattern = pattern
+        self.update_toggles()
+
+    def update_toggles(self):
+        for key in ("WCS", "MACHINE"):
+            context = self.buttons[f"coord_{key}"].get_style_context()
+            if key == self.coord:
+                context.add_class("button_active")
+            else:
+                context.remove_class("button_active")
+        for key in ("CORNERS_4", "CROSS_5"):
+            context = self.buttons[f"pattern_{key}"].get_style_context()
+            if key == self.pattern:
+                context.add_class("button_active")
+            else:
+                context.remove_class("button_active")
+        self.entries["WIDTH"].set_sensitive(self.coord == "WCS")
+        self.entries["HEIGHT"].set_sensitive(self.coord == "WCS")
+        self.entries["MARGIN"].set_placeholder_text("Margin (5 stock / 10 machine)")
+
+    def show_keyboard(self, entry, event):
+        self._screen.show_keyboard(entry, event)
+
+    def _entry(self, name):
+        value = self.entries[name].get_text().strip()
+        return value if value else None
+
+    def _bounds_complete(self):
+        return all(self._entry(name) is not None for name in ("X_MIN", "X_MAX", "Y_MIN", "Y_MAX"))
+
+    def build_script(self):
+        parts = ["MEASURE_SURFACE_TILT", f"COORD={self.coord}", f"PATTERN={self.pattern}"]
+        margin = self._entry("MARGIN")
+        if margin is not None:
+            parts.append(f"MARGIN={margin}")
+        if self.coord == "WCS":
+            width = self._entry("WIDTH")
+            height = self._entry("HEIGHT")
+            if width and height:
+                parts.extend((f"WIDTH={width}", f"HEIGHT={height}"))
+            elif self._bounds_complete():
+                parts.extend(f"{name}={self._entry(name)}" for name in ("X_MIN", "X_MAX", "Y_MIN", "Y_MAX"))
+            else:
+                self._screen.show_popup_message("Stock measuring needs Width/Height or XY bounds")
+                return None
+        elif self._bounds_complete():
+            parts.extend(f"{name}={self._entry(name)}" for name in ("X_MIN", "X_MAX", "Y_MIN", "Y_MAX"))
+        return " ".join(parts)
+
+    def measure(self, widget):
+        script = self.build_script()
+        if not script:
+            return
+        self._screen._confirm_send_action(
+            widget,
+            "Measure surface tilt?\n\n"
+            f"<tt>{script}</tt>\n\n"
+            "This probes Z only and does not apply compensation.",
+            "printer.gcode.script",
+            {"script": script},
+        )
+
+    def update_status(self, *args):
+        result = self.surface_result()
+        if not result:
+            self.labels["summary"].set_label("No surface map")
+            self.labels["detail"].set_label("Measure stock or machine area. Report only; no compensation.")
+            self.map.queue_draw()
+            return
+        summary = result.get("summary") or {}
+        self.labels["summary"].set_label(
+            "Range %.3f mm" % float(summary.get("range", 0))
+        )
+        self.labels["detail"].set_label(
+            "%s · %s · High %s · Low %s"
+            % (
+                str(result.get("coord", "--")).upper(),
+                result.get("pattern", "--"),
+                summary.get("high_point", "--"),
+                summary.get("low_point", "--"),
+            )
+        )
+        self.map.queue_draw()
