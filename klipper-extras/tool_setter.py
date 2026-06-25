@@ -338,7 +338,14 @@ class ToolSetter:
             "samples": list(readings),
             "retracted_z": toolhead.get_position()[2],
         }
+        gcmd.respond_info("Tool setter contact Z=%.6f" % (contact_z,))
         return contact_z
+
+    def _set_result_metadata(self, gcmd, **metadata):
+        result = dict(self.last_result or {})
+        result.update(metadata)
+        result["command"] = gcmd.get_command()
+        self.last_result = result
 
     def _format_accuracy(self, readings):
         ordered = sorted(readings)
@@ -402,6 +409,15 @@ class ToolSetter:
             "setter_work_z": setter_work_z,
             "reference_contact_z": contact_z,
         }
+        self._set_result_metadata(
+            gcmd,
+            kind="setter",
+            title="Setter Calibration",
+            result="Setter Z %.3f" % (setter_work_z,),
+            highlight="Reference stored",
+            detail="Contact %.3f" % (contact_z,),
+            active_wcs=wcs.active_wcs,
+        )
         self._persist()
         gcmd.respond_info(
             "Setter Z calibrated for %s: contact Z=%.6f, setter work Z=%.6f"
@@ -431,7 +447,8 @@ class ToolSetter:
                 "delta": delta,
             }
         )
-        if self._should_apply(gcmd):
+        applied = self._should_apply(gcmd)
+        if applied:
             machine_position = list(
                 self.printer.lookup_object("toolhead").get_position()
             )
@@ -442,6 +459,16 @@ class ToolSetter:
             action = "updated"
         else:
             action = "not updated; add APPLY=1 or SET_ZERO=1 to apply"
+        self._set_result_metadata(
+            gcmd,
+            kind="setter",
+            title="Apply Bit Z" if applied else "Check Bit Z",
+            result="Delta Z %+.3f" % (delta,),
+            highlight="Offset updated" if applied else "Dry run",
+            detail="Setter %.3f" % (setter_work_z,),
+            active_wcs=wcs.active_wcs,
+            applied=applied,
+        )
         gcmd.respond_info(
             "Bit Z for %s: contact Z=%.6f, target WCS Z offset=%.6f, "
             "delta=%.6f (%s)"
@@ -459,6 +486,14 @@ class ToolSetter:
         readings = (self.last_result or {}).get("samples", [])
         if not readings:
             raise gcmd.error("No tool setter accuracy samples captured")
+        self._set_result_metadata(
+            gcmd,
+            kind="setter",
+            title="Setter Accuracy",
+            result="Range %.3f" % (max(readings) - min(readings),),
+            highlight="%d samples" % (len(readings),),
+            detail="Avg %.3f" % (sum(readings) / len(readings),),
+        )
         gcmd.respond_info(self._format_accuracy(readings))
 
     def get_status(self, eventtime=None):

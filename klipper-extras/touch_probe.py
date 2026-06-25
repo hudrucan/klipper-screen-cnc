@@ -317,6 +317,10 @@ class TouchProbe:
             "position": result[:3],
             "samples": list(readings),
         }
+        gcmd.respond_info(
+            "Touch probe %s: X=%.6f Y=%.6f Z=%.6f"
+            % (direction, result[0], result[1], result[2])
+        )
         return result
 
     def _retract_from_hit(self, hit, axis, sense, distance, speed):
@@ -399,8 +403,23 @@ class TouchProbe:
             raise gcmd.error("Select G54-G59 before setting a work zero")
         wcs.set_from_machine_position(wcs.active_wcs, machine_position, values)
 
+    def _set_result_metadata(self, gcmd, **metadata):
+        result = dict(self.last_result or {})
+        result.update(metadata)
+        result["command"] = gcmd.get_command()
+        self.last_command = gcmd.get_command()
+        self.last_result = result
+
     def _raw_probe(self, gcmd, direction):
         result = self._probe(gcmd, direction)
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="Probe %s" % (direction,),
+            result="X%.3f Y%.3f Z%.3f" % (result[0], result[1], result[2]),
+            highlight="Triggered",
+            detail="Raw touch move",
+        )
         gcmd.respond_info(
             "Probe %s triggered at X=%.6f Y=%.6f Z=%.6f"
             % (direction, result[0], result[1], result[2])
@@ -408,6 +427,9 @@ class TouchProbe:
 
     def _find_edge(self, gcmd, direction):
         axis, _ = DIRECTIONS[direction]
+        axis_name = AXIS_NAMES[axis]
+        side = "Min" if direction.endswith("+") else "Max"
+        set_zero = bool(gcmd.get_int("SET_ZERO", 0, minval=0, maxval=1))
         self._require_safe(gcmd, "XYZ")
         result = self._probe(gcmd, direction)
         edge = self._edge(result, direction)
@@ -418,27 +440,54 @@ class TouchProbe:
             edge[axis],
             self._travel_speed(gcmd),
         )
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="%s %s" % (axis_name, side),
+            result="%s %.3f" % (axis_name, edge[axis]),
+            highlight="WCS %s0 set" % (axis_name,) if set_zero else "Edge measured",
+            detail="Touched toward %s" % (direction,),
+            edge_position=edge[axis],
+            raw_position=result[:3],
+            compensated_position=edge[:3],
+            axis=axis_name,
+            side=side.upper(),
+            set_zero=set_zero,
+        )
         gcmd.respond_info(
             "%s edge: raw %.6f, compensated %.6f%s"
             % (
-                AXIS_NAMES[axis],
+                axis_name,
                 result[axis],
                 edge[axis],
-                ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
+                ", work zero updated" if set_zero else "",
             )
         )
 
     def _find_surface_z(self, gcmd):
+        set_zero = bool(gcmd.get_int("SET_ZERO", 0, minval=0, maxval=1))
         self._require_safe(gcmd, "XYZ")
         result = self._probe(gcmd, "Z-")
         surface = self._surface_z(result)
         self._set_wcs(gcmd, surface, {2: 0.0})
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="Stock Z0",
+            result="Z %.3f" % (surface[2],),
+            highlight="WCS Z0 set" if set_zero else "Surface measured",
+            detail="Touched toward Z-",
+            raw_position=result[:3],
+            compensated_position=surface[:3],
+            surface_z=surface[2],
+            set_zero=set_zero,
+        )
         gcmd.respond_info(
             "Z surface: raw %.6f, compensated %.6f%s"
             % (
                 result[2],
                 surface[2],
-                ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
+                ", work zero updated" if set_zero else "",
             )
         )
 
@@ -624,7 +673,16 @@ class TouchProbe:
             "points": measured,
             "summary": summary,
         }
-        self.last_command = gcmd.get_command()
+        self._set_result_metadata(
+            gcmd,
+            kind="surface",
+            title="Surface Measure",
+            result="Range %.3f mm" % (summary["range"],),
+            highlight="High %s - Low %s"
+            % (summary["high_point"], summary["low_point"]),
+            detail="%s %s" % (coord, pattern.replace("_", " ")),
+            surface_result=self.surface_result,
+        )
         self._persist_surface_result()
         gcmd.respond_info(
             "Surface tilt %s %s: range %.6f, high %s, low %s, saved %s"
@@ -641,9 +699,11 @@ class TouchProbe:
     def _find_center(
         self, gcmd, axis, distance, leave_hopped=True, set_zero=True
     ):
+        set_zero_requested = bool(gcmd.get_int("SET_ZERO", 0, minval=0, maxval=1))
         self._require_safe(gcmd, "XYZ")
         direction_pos = AXIS_NAMES[axis] + "+"
         direction_neg = AXIS_NAMES[axis] + "-"
+        axis_name = AXIS_NAMES[axis]
         travel_speed = self._travel_speed(gcmd)
         overshoot = gcmd.get_float(
             "OVERSHOOT", self.overshoot, above=0.0
@@ -670,20 +730,37 @@ class TouchProbe:
             )
         if not leave_hopped:
             self._z_hop_down(gcmd, final_hop)
+        width = abs(positive[axis] - negative[axis])
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="Center %s" % (axis_name,),
+            result="%s %.3f" % (axis_name, center),
+            highlight="WCS %s0 set" % (axis_name,)
+            if set_zero and set_zero_requested
+            else "Center measured",
+            detail="Width %.3f" % (width,),
+            center=center,
+            width=width,
+            positive_edge=positive[axis],
+            negative_edge=negative[axis],
+            axis=axis_name,
+            set_zero=set_zero and set_zero_requested,
+        )
         gcmd.respond_info(
             "%s center %.6f, measured width %.6f%s"
             % (
-                AXIS_NAMES[axis],
+                axis_name,
                 center,
-                abs(positive[axis] - negative[axis]),
+                width,
                 (
                     ", work zero updated"
-                    if set_zero and gcmd.get_int("SET_ZERO", 0)
+                    if set_zero and set_zero_requested
                     else ""
                 ),
             )
         )
-        return center, final_hop
+        return center, final_hop, width
 
     def cmd_QUERY_TOUCH_PROBE(self, gcmd):
         state = "TRIGGERED" if self._query_triggered() else "ready"
@@ -736,7 +813,7 @@ class TouchProbe:
             "OVERSHOOT", self.overshoot, above=0.0
         )
         travel_speed = self._travel_speed(gcmd)
-        center_x, x_hop = self._find_center(
+        center_x, x_hop, width_x = self._find_center(
             gcmd,
             0,
             distance_x,
@@ -754,13 +831,26 @@ class TouchProbe:
         self._move_axis(1, y_start, travel_speed)
         self._z_hop_down(gcmd, x_hop)
 
-        center_y, _ = self._find_center(
+        center_y, _, width_y = self._find_center(
             gcmd, 1, distance_y, set_zero=False
         )
         position = list(toolhead.get_position())
         position[0] = center_x
         position[1] = center_y
         self._set_wcs(gcmd, position, {0: 0.0, 1: 0.0})
+        set_zero = bool(gcmd.get_int("SET_ZERO", 0, minval=0, maxval=1))
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="Center XY",
+            result="X%.3f Y%.3f" % (center_x, center_y),
+            highlight="WCS XY0 set" if set_zero else "Center measured",
+            detail="Span X%.3f Y%.3f" % (width_x, width_y),
+            center=[center_x, center_y],
+            width_x=width_x,
+            width_y=width_y,
+            set_zero=set_zero,
+        )
         gcmd.respond_info(
             "XY center X=%.6f Y=%.6f" % (center_x, center_y)
         )
@@ -790,6 +880,21 @@ class TouchProbe:
             [center_x, center_y, start[2] + actual_hop],
             {0: 0.0, 1: 0.0},
         )
+        set_zero = bool(gcmd.get_int("SET_ZERO", 0, minval=0, maxval=1))
+        self._set_result_metadata(
+            gcmd,
+            kind="touch",
+            title="Bore XY",
+            result="X%.3f Y%.3f" % (center_x, center_y),
+            highlight="Diameter %.3f" % (average_diameter,),
+            detail="X %.3f Y %.3f" % (diameter_x, diameter_y),
+            center=[center_x, center_y],
+            diameter_x=diameter_x,
+            diameter_y=diameter_y,
+            average_diameter=average_diameter,
+            edges=edges,
+            set_zero=set_zero,
+        )
         gcmd.respond_info(
             "Bore center X=%.6f Y=%.6f, diameter X=%.6f Y=%.6f avg=%.6f%s"
             % (
@@ -798,7 +903,7 @@ class TouchProbe:
                 diameter_x,
                 diameter_y,
                 average_diameter,
-                ", work zero updated" if gcmd.get_int("SET_ZERO", 0) else "",
+                ", work zero updated" if set_zero else "",
             )
         )
 

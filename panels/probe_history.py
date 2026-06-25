@@ -69,7 +69,7 @@ class Panel(ScreenPanel):
             entries.append(self._surface_entry(surface))
 
         touch_result = touch.get("last_result")
-        if touch_result:
+        if touch_result and touch_result.get("kind") != "surface" and not touch_result.get("surface_result"):
             entries.append(self._touch_entry(touch, touch_result, active_wcs))
 
         setter_result = setter.get("last_result")
@@ -77,7 +77,7 @@ class Panel(ScreenPanel):
             entries.append(self._setter_entry(setter_result, active_wcs))
 
         calibration = setter.get("calibration")
-        if calibration:
+        if calibration and (setter_result or {}).get("title") != "Setter Calibration":
             entries.append(self._calibration_entry(calibration))
 
         return entries[:12]
@@ -123,6 +123,15 @@ class Panel(ScreenPanel):
         }
 
     def _touch_entry(self, status, result, active_wcs):
+        if result.get("title") or result.get("result") or result.get("highlight"):
+            return {
+                "title": result.get("title") or self._touch_title(status.get("last_command"), result.get("direction")),
+                "meta": self._meta(result.get("time") or result.get("timestamp"), result.get("wcs") or active_wcs),
+                "result": result.get("result") or self._position_result(result.get("position")),
+                "highlight": result.get("highlight") or "Latest touch result",
+                "detail": result.get("detail") or result.get("command") or "Touch probe",
+                "kind": result.get("kind", "touch"),
+            }
         direction = result.get("direction") or status.get("last_command") or "Touch Probe"
         position = result.get("position")
         samples = result.get("samples") or []
@@ -136,6 +145,15 @@ class Panel(ScreenPanel):
         }
 
     def _setter_entry(self, result, active_wcs):
+        if result.get("title") or result.get("result") or result.get("highlight"):
+            return {
+                "title": result.get("title") or "Tool Setter",
+                "meta": self._meta(result.get("time") or result.get("timestamp"), result.get("active_wcs") or active_wcs),
+                "result": result.get("result") or "Contact Z %s" % self._fmt(result.get("contact_z"), 3),
+                "highlight": result.get("highlight") or "Setter touched",
+                "detail": result.get("detail") or result.get("command") or "Tool setter",
+                "kind": result.get("kind", "setter"),
+            }
         if "delta" in result:
             title = "Apply Bit Z"
             value = "Delta Z %+.3f" % float(result.get("delta", 0))
