@@ -28,6 +28,7 @@ class Panel(ScreenPanel):
     )
     surface_actions = (
         ("surface", "Surface Map", "PANEL:surface_measure", False, "Measure and view surface tilt"),
+        ("history", "Result History", "PANEL:probe_history", False, "Review latest probe, setter, and surface results"),
     )
 
     def __init__(self, screen, title):
@@ -271,6 +272,8 @@ class Panel(ScreenPanel):
                 )
             elif name == "surface":
                 self.buttons[name].set_sensitive(has_touch and ready)
+            elif name == "history":
+                self.buttons[name].set_sensitive(has_touch or has_setter)
             elif name in {item[0] for item in self.touch_actions}:
                 self.buttons[name].set_sensitive(has_touch and ready and xyz_homed)
             elif name == "calibrate":

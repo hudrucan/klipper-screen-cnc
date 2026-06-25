@@ -712,6 +712,55 @@ trough {
     min-height: 3.3em;
 }
 
+.cnc-history-card {
+    padding: 0.55em 0.65em;
+    border: 1px solid alpha(@text, 0.16);
+    background-color: alpha(@text, 0.035);
+}
+
+.cnc-history-accent {
+    min-height: 0.22em;
+}
+
+.cnc-history-accent-surface {
+    background-color: @color3;
+}
+
+.cnc-history-accent-touch {
+    background-color: @color2;
+}
+
+.cnc-history-accent-setter {
+    background-color: @color4;
+}
+
+.cnc-history-title {
+    font-size: 1.05em;
+    font-weight: bold;
+}
+
+.cnc-history-meta {
+    font-size: 0.78em;
+    opacity: 0.66;
+}
+
+.cnc-history-result {
+    font-family: monospace;
+    font-size: 1.08em;
+    font-weight: bold;
+    color: @color4;
+}
+
+.cnc-history-highlight {
+    font-weight: bold;
+    color: @color2;
+}
+
+.cnc-history-detail {
+    font-size: 0.82em;
+    opacity: 0.72;
+}
+
 .cnc-confirm-badge {
     padding: 0.35em 0.55em;
     border-left: .4em solid @color4;
