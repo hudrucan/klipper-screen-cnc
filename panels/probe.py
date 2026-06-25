@@ -283,33 +283,67 @@ class Panel(ScreenPanel):
             )
 
         if confirm:
-            self._screen._confirm_send_action(
-                widget,
-                self._confirm_text(name, script),
-                "printer.gcode.script",
-                {"script": script},
-            )
+            self.confirm_cnc_action(widget, name, script)
         else:
             self._screen._send_action(widget, "printer.gcode.script", {"script": script})
 
-    def _confirm_text(self, name, script):
-        notes = {
-            "stock_z": "This will update active WCS Z0.",
-            "x_min": "This will update active WCS X0.",
-            "x_max": "This will update active WCS X0.",
-            "y_min": "This will update active WCS Y0.",
-            "y_max": "This will update active WCS Y0.",
-            "center_x": "This will update active WCS X0.",
-            "center_y": "This will update active WCS Y0.",
-            "center_xy": "This will update active WCS XY0.",
-            "bore": "This will update active WCS XY0.",
-            "accuracy": "This will touch the fixed setter repeatedly.",
-            "calibrate": "Use this only after stock Z0 is correct.",
-            "check_bit": "Dry run: WCS Z will not be changed.",
-            "apply_bit": "This will update active WCS Z for the current bit.",
+    def confirm_cnc_action(self, widget, name, script):
+        data = {
+            "stock_z": ("Set Stock Z0", "Updates active WCS Z", "This will probe Z and set active WCS Z0."),
+            "x_min": ("Probe X Min", "Updates active WCS X", "This will probe the X-min edge and set X0."),
+            "x_max": ("Probe X Max", "Updates active WCS X", "This will probe the X-max edge and set X0."),
+            "y_min": ("Probe Y Min", "Updates active WCS Y", "This will probe the Y-min edge and set Y0."),
+            "y_max": ("Probe Y Max", "Updates active WCS Y", "This will probe the Y-max edge and set Y0."),
+            "center_x": ("Center Stock X", "Updates active WCS X", "This will probe both X edges and set center X0."),
+            "center_y": ("Center Stock Y", "Updates active WCS Y", "This will probe both Y edges and set center Y0."),
+            "center_xy": ("Center Stock XY", "Updates active WCS XY", "This will probe X/Y edges and set center XY0."),
+            "bore": ("Probe Bore", "Updates active WCS XY", "This will probe the bore and set center XY0."),
+            "accuracy": ("Setter Accuracy", "Motion only", "This will touch the fixed setter repeatedly."),
+            "calibrate": ("Calibrate Setter Z", "Stores calibration", "Use this only after stock Z0 is correct."),
+            "check_bit": ("Check Bit Z", "Dry run", "This measures the bit and reports WCS Z delta only."),
+            "apply_bit": ("Apply Bit Z", "Updates active WCS Z", "This will measure the bit and update active WCS Z."),
         }
-        note = notes.get(name, "Run probing command?")
-        return f"{note}\n\n<tt>{script}</tt>\n\nSpindle must be off."
+        title, badge, message = data.get(name, ("Run Probe Action", "CNC motion", "Run this probing command?"))
+        self._show_cnc_confirm(
+            title,
+            badge,
+            message,
+            script,
+            self._run_confirmed_script,
+            script,
+        )
+
+    def _show_cnc_confirm(self, title, badge, message, script, callback, *args):
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        heading = Gtk.Label(label=f"<big><b>{title}</b></big>", xalign=0, use_markup=True)
+        badge_label = Gtk.Label(label=badge, xalign=0)
+        badge_label.get_style_context().add_class("cnc-confirm-badge")
+        note = Gtk.Label(label=message, xalign=0, wrap=True)
+        note.get_style_context().add_class("cnc-probe-detail")
+        checklist = Gtk.Label(
+            label="✓ Spindle off\n✓ Probe path clear\n✓ XYZ homed",
+            xalign=0,
+        )
+        checklist.get_style_context().add_class("cnc-confirm-checklist")
+        command = Gtk.Label(label=f"<tt>{script}</tt>", xalign=0, wrap=True, use_markup=True)
+        command.get_style_context().add_class("cnc-confirm-script")
+        content.pack_start(heading, False, False, 0)
+        content.pack_start(badge_label, False, False, 0)
+        content.pack_start(note, False, False, 0)
+        content.pack_start(checklist, False, False, 0)
+        content.pack_start(command, False, False, 0)
+        buttons = [
+            {"name": "Run", "response": Gtk.ResponseType.OK, "style": "dialog-info"},
+            {"name": "Cancel", "response": Gtk.ResponseType.CANCEL, "style": "dialog-error"},
+        ]
+        if self._screen.confirm is not None:
+            self._gtk.remove_dialog(self._screen.confirm)
+        self._screen.confirm = self._gtk.Dialog(title, buttons, content, callback, *args)
+
+    def _run_confirmed_script(self, dialog, response_id, script):
+        self._gtk.remove_dialog(dialog)
+        if response_id == Gtk.ResponseType.OK:
+            self._screen._send_action(None, "printer.gcode.script", {"script": script})
 
     def _axis_span(self, axis):
         axis_min = self._printer.get_stat("toolhead", "axis_minimum") or [0, 0, 0]

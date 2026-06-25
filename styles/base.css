@@ -712,6 +712,25 @@ trough {
     min-height: 3.3em;
 }
 
+.cnc-confirm-badge {
+    padding: 0.35em 0.55em;
+    border-left: .4em solid @color4;
+    background-color: alpha(@text, 0.055);
+    font-weight: bold;
+}
+
+.cnc-confirm-checklist {
+    font-size: 0.9em;
+    opacity: 0.82;
+}
+
+.cnc-confirm-script {
+    padding: 0.45em 0.55em;
+    background-color: alpha(@text, 0.045);
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
 .cnc-override-value {
     font-family: monospace;
     font-size: 4em;

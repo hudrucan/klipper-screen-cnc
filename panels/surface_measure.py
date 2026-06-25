@@ -237,14 +237,49 @@ class Panel(ScreenPanel):
         script = self.build_script()
         if not script:
             return
-        self._screen._confirm_send_action(
-            widget,
-            "Measure surface tilt?\n\n"
-            f"<tt>{script}</tt>\n\n"
-            "This probes Z only and does not apply compensation.",
-            "printer.gcode.script",
-            {"script": script},
+        self.confirm_measure(script)
+
+    def confirm_measure(self, script):
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        heading = Gtk.Label(
+            label="<big><b>Measure Surface Tilt</b></big>",
+            xalign=0,
+            use_markup=True,
         )
+        badge = Gtk.Label(label="Motion only · no compensation", xalign=0)
+        badge.get_style_context().add_class("cnc-confirm-badge")
+        note = Gtk.Label(
+            label="This will probe Z at the selected surface points and only report the map.",
+            xalign=0,
+            wrap=True,
+        )
+        note.get_style_context().add_class("cnc-probe-detail")
+        checklist = Gtk.Label(
+            label="✓ Spindle off\n✓ Probe connected\n✓ Surface points are clear",
+            xalign=0,
+        )
+        checklist.get_style_context().add_class("cnc-confirm-checklist")
+        command = Gtk.Label(label=f"<tt>{script}</tt>", xalign=0, wrap=True, use_markup=True)
+        command.get_style_context().add_class("cnc-confirm-script")
+        content.pack_start(heading, False, False, 0)
+        content.pack_start(badge, False, False, 0)
+        content.pack_start(note, False, False, 0)
+        content.pack_start(checklist, False, False, 0)
+        content.pack_start(command, False, False, 0)
+        buttons = [
+            {"name": "Run", "response": Gtk.ResponseType.OK, "style": "dialog-info"},
+            {"name": "Cancel", "response": Gtk.ResponseType.CANCEL, "style": "dialog-error"},
+        ]
+        if self._screen.confirm is not None:
+            self._gtk.remove_dialog(self._screen.confirm)
+        self._screen.confirm = self._gtk.Dialog(
+            "Measure Surface", buttons, content, self.run_measure, script
+        )
+
+    def run_measure(self, dialog, response_id, script):
+        self._gtk.remove_dialog(dialog)
+        if response_id == Gtk.ResponseType.OK:
+            self._screen._send_action(None, "printer.gcode.script", {"script": script})
 
     def update_status(self, *args):
         result = self.surface_result()
