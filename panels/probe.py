@@ -397,7 +397,7 @@ class Panel(ScreenPanel):
             entry.set_alignment(0.5)
             entry.set_input_purpose(Gtk.InputPurpose.NUMBER)
             entry.set_hexpand(False)
-            entry.set_size_request(76, 32)
+            entry.set_size_request(54, 32)
             entries[key] = entry
             grid.attach(row_label, 0, row, 1, 1)
             for step in (-10, -5, -1):

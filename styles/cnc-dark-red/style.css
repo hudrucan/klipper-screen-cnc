@@ -8,7 +8,7 @@
 @define-color card-2 #1c2429;
 @define-color active #d63b3b;
 @define-color active-dark #191011;
-@define-color selected-bg #241315;
+@define-color selected-bg #3a1719;
 @define-color lines #4e5a60;
 @define-color lines-soft alpha(#edf2f2, 0.10);
 
@@ -111,8 +111,9 @@ button.color3.button_active,
 button.color4.button_active {
     border-color: @active;
     border-bottom-color: @active;
-    outline: .14em solid @active;
-    outline-offset: -.14em;
+    border-width: .16em;
+    border-right-width: .16em;
+    border-bottom-width: .16em;
 }
 
 button.update {
@@ -306,8 +307,7 @@ scrollbar slider {
 .cnc-wcs-active {
     background-color: @selected-bg;
     border-color: @active;
-    outline: .14em solid @active;
-    outline-offset: -.14em;
+    border-width: .16em;
 }
 
 .cnc-jog-button,
@@ -330,8 +330,7 @@ scrollbar slider {
 .cnc-jog-center.button_active {
     border-color: @active;
     background-color: @selected-bg;
-    outline: .14em solid @active;
-    outline-offset: -.14em;
+    border-width: .16em;
 }
 
 .buttons_slim.button_active,
@@ -340,8 +339,16 @@ button.buttons_slim.button_active,
 button.cnc-wcs-button.button_active {
     border-color: @active;
     background-color: @selected-bg;
-    outline: .14em solid @active;
-    outline-offset: -.14em;
+    border-width: .16em;
+    border-bottom-width: .16em;
+}
+
+button.horizontal_togglebuttons_active,
+.horizontal_togglebuttons_active {
+    background-color: @selected-bg;
+    border-color: @active;
+    border-width: .16em;
+    border-right-width: .16em;
 }
 
 .cnc-file-start,
