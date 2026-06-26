@@ -12,6 +12,9 @@ INSTALL_KLIPPER_EXTRAS="${INSTALL_KLIPPER_EXTRAS:-1}"
 SERVICE="${KLIPPERSCREEN_SERVICE:-klipper-screen.service}"
 
 echo "Updating Klipper Screen CNC dependencies"
+echo "Update user: $(id -un 2>/dev/null || true)"
+echo "HOME: ${HOME}"
+echo "Repo path: ${KSPATH}"
 
 restart_systemd_service()
 {
@@ -94,11 +97,45 @@ install_klipper_extras()
     fi
 
     echo "Installing Klipper CNC extras to ${extras_dst}"
-    cp "${extras_src}/work_coordinate_systems.py" "${extras_dst}/"
-    cp "${extras_src}/touch_probe.py" "${extras_dst}/"
-    cp "${extras_src}/tool_setter.py" "${extras_dst}/"
+    local extra_file
+    local installed=0
+    for extra_file in "${extras_src}"/*.py; do
+        if [ ! -f "$extra_file" ]; then
+            continue
+        fi
+        install_extra_file "$extra_file" "${extras_dst}"
+        installed=$((installed + 1))
+    done
+
+    if [ "$installed" -eq 0 ]; then
+        echo "No Klipper CNC extras found in ${extras_src}"
+        return 1
+    fi
 
     restart_systemd_service klipper || true
+}
+
+install_extra_file()
+{
+    local src="$1"
+    local extras_dst="$2"
+    local filename
+    filename=$(basename "$src")
+    local dst="${extras_dst}/${filename}"
+
+    if [ ! -f "$src" ]; then
+        echo "Missing Klipper CNC extra source: ${src}"
+        return 1
+    fi
+
+    cp -f "$src" "$dst"
+
+    if cmp -s "$src" "$dst"; then
+        echo "Installed ${filename} -> ${dst}"
+    else
+        echo "Failed to verify copied extra: ${filename}"
+        return 1
+    fi
 }
 
 install_klipper_extras
