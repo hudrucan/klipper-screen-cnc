@@ -90,6 +90,7 @@ class TouchProbe:
 
         commands = {
             "QUERY_TOUCH_PROBE": self.cmd_QUERY_TOUCH_PROBE,
+            "ASSERT_TOUCH_PROBE_REMOVED": self.cmd_ASSERT_TOUCH_PROBE_REMOVED,
             "PROBE_X_POS": self.cmd_PROBE_X_POS,
             "PROBE_X_NEG": self.cmd_PROBE_X_NEG,
             "PROBE_Y_POS": self.cmd_PROBE_Y_POS,
@@ -765,6 +766,13 @@ class TouchProbe:
     def cmd_QUERY_TOUCH_PROBE(self, gcmd):
         state = "TRIGGERED" if self._query_triggered() else "ready"
         gcmd.respond_info("Touch probe: %s" % (state,))
+
+    def cmd_ASSERT_TOUCH_PROBE_REMOVED(self, gcmd):
+        if not self._query_triggered():
+            raise gcmd.error(
+                "Touch probe is ready/connected. Remove the probe wire before starting the spindle."
+            )
+        gcmd.respond_info("Touch probe removed/open: spindle start allowed")
 
     def cmd_PROBE_X_POS(self, gcmd):
         self._raw_probe(gcmd, "X+")

@@ -31,7 +31,9 @@ This project is under active development and currently targets our own Klipper C
 Spindle controls are shown when Klipper exposes the `M3` and `M5` commands and an
 `[output_pin spindle]` section. `M4` enables the counter-clockwise control.
 If a wired touch probe can be left attached near the spindle, use the guarded
-`M3` example in `config/examples/cnc_spindle.cfg`.
+`M3` example in `config/examples/cnc_spindle.cfg`. For normally-closed probes,
+spindle start is allowed only after the probe wire is removed and the probe input
+reports triggered/open.
 
 ## Install
 
@@ -69,18 +71,19 @@ For Mainsail/Fluidd updates, add the optional Moonraker
 `scripts/KlipperScreen-update.sh` for non-interactive dependency and Klipper-extra
 updates.
 
-See the quick [installation](docs/installation.md), [controls](docs/controls.md), and
-[migration](docs/migration.md) notes for configuration and troubleshooting.
-Optional Klipper-side examples for guarded spindle start, CNC pause/resume/cancel,
-Fusion start/end hooks, touch-probe buttons, tool-setter workflows, and
-parameter-aware homing are documented in [Example CNC Macros](docs/cnc-macros.md).
-Experimental persistent WCS, XY stylus probing, and cutting-tool Z touch-off
-modules are documented in
-[Experimental Klipper CNC Extras](docs/klipper-extras.md).
-An adapted Fusion 360 post processor is included in
-[`tools/fusion360`](tools/fusion360/README.md).
-An optional Moonraker processor can generate
-[CNC toolpath thumbnails](tools/moonraker/README.md) after upload.
+Useful docs:
+
+- [Installation](docs/installation.md), [controls](docs/controls.md), and
+  [migration](docs/migration.md) notes cover setup and troubleshooting.
+- [Example CNC Macros](docs/cnc-macros.md) covers guarded spindle start,
+  pause/resume/cancel, Fusion start/end hooks, touch-probe buttons,
+  tool-setter workflows, and parameter-aware homing.
+- [Experimental Klipper CNC Extras](docs/klipper-extras.md) covers persistent
+  WCS, XY stylus probing, surface measurement, and cutting-tool Z touch-off.
+- [`tools/fusion360`](tools/fusion360/README.md) includes the adapted Fusion 360
+  post processor.
+- [`tools/moonraker`](tools/moonraker/README.md) includes the optional processor
+  for CNC toolpath thumbnails after upload.
 
 ## Sonic Pad Debian
 

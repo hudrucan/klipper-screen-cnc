@@ -57,12 +57,15 @@ overrides will prevent Klipper from loading.
 
 ## Guarded Spindle
 
-`cnc_spindle.cfg` defines guarded `M3` and `M5` macros for machines where the
-touch probe has a wire or clip that must be removed before the spindle rotates.
+`cnc_spindle.cfg` defines guarded `M3` and `M5` macros for machines where a
+normally-closed touch probe has a wire or clip that must be removed before the
+spindle rotates.
 
-- `M3` first checks `[touch_probe]`.
-- If `[touch_probe]` exists and reports triggered, `M3` forces the spindle output
-  off and aborts.
+- `M3` first live-queries `[touch_probe]` through `ASSERT_TOUCH_PROBE_REMOVED`.
+- If `[touch_probe]` exists and reports ready, the probe is still connected and
+  `M3` aborts before enabling the spindle.
+- If `[touch_probe]` exists and reports triggered/open, the probe wire is treated
+  as removed and spindle start is allowed.
 - Machines without `[touch_probe]` can still use the same spindle macros.
 - `M5` always turns the spindle output off.
 
