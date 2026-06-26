@@ -79,21 +79,23 @@ Add this to `~/printer_data/config/moonraker.conf` if you want updates from
 Mainsail/Fluidd's update manager:
 
 ```ini
-[update_manager klipper-screen-cnc]
+[update_manager klipper-screen]
 type: git_repo
 path: ~/klipper-screen-cnc
 origin: https://github.com/hudrucan/klipper-screen-cnc.git
 primary_branch: master
-is_system_service: False
 install_script: scripts/KlipperScreen-update.sh
 ```
 
-Do not set `managed_services` unless your systemd unit really exists under that
-name. `is_system_service: False` prevents Moonraker from guessing a
-`klipper-screen-cnc.service` unit name; the bundled update script copies
-Klipper CNC extras automatically when it can find the Klipper checkout, then
-restarts `klipper-screen.service`. Set `KLIPPERSCREEN_SERVICE` only if your
-systemd unit uses a different name.
+Use `klipper-screen` as the update manager component name even though the checkout
+directory is `~/klipper-screen-cnc`. Moonraker derives the systemd service from the
+component name, so this lets Mainsail/Fluidd restart the real
+`klipper-screen.service` after pulling updates. The bundled update script also
+copies Klipper CNC extras automatically when it can find the Klipper checkout.
+
+If you previously used `[update_manager klipper-screen-cnc]`, remove that block
+before adding the one above. Otherwise Moonraker may keep trying to restart a
+non-existent `klipper-screen-cnc.service`.
 
 Restart Moonraker after editing its config:
 

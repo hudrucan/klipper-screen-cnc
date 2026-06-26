@@ -34,6 +34,9 @@ used a different service spelling. Disable any unit that launches the old
 - `~/.KlipperScreen-env` was replaced by `~/.klipper-screen-env`.
 - `KlipperScreen.service` was replaced by `klipper-screen.service`.
 - The expected checkout path in scripts and docs is `~/klipper-screen-cnc`.
+- Moonraker update manager should use `[update_manager klipper-screen]`, not
+  `[update_manager klipper-screen-cnc]`, so it restarts the real
+  `klipper-screen.service`.
 
 Copy only the settings still needed from the backup config. Do not copy the old config
 directory wholesale because upstream printer-specific menu entries may reference panels

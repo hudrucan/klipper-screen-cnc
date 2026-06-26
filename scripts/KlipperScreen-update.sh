@@ -12,6 +12,21 @@ SERVICE="${KLIPPERSCREEN_SERVICE:-klipper-screen.service}"
 
 echo "Updating Klipper Screen CNC dependencies"
 
+restart_systemd_service()
+{
+    local service_name="$1"
+    if ! command -v systemctl >/dev/null 2>&1; then
+        return
+    fi
+
+    if [ -t 0 ]; then
+        sudo systemctl restart "$service_name"
+    else
+        sudo -n systemctl restart "$service_name" || \
+            echo "Skipping ${service_name} restart; Moonraker should restart managed services"
+    fi
+}
+
 if [ ! -d "$KSENV" ]; then
     echo "Virtual environment not found at ${KSENV}; creating it"
     python3 -m venv "$KSENV"
@@ -56,16 +71,18 @@ install_klipper_extras()
     cp "${extras_src}/touch_probe.py" "${extras_dst}/"
     cp "${extras_src}/tool_setter.py" "${extras_dst}/"
 
-    if command -v systemctl >/dev/null 2>&1; then
-        sudo systemctl restart klipper || true
-    fi
+    restart_systemd_service klipper || true
 }
 
 install_klipper_extras
 
 if command -v systemctl >/dev/null 2>&1; then
-    sudo systemctl daemon-reload
-    sudo systemctl restart "$SERVICE"
+    if [ -t 0 ]; then
+        sudo systemctl daemon-reload
+    else
+        sudo -n systemctl daemon-reload || true
+    fi
+    restart_systemd_service "$SERVICE"
 fi
 
 echo "Klipper Screen CNC update complete"
