@@ -61,8 +61,9 @@ overrides will prevent Klipper from loading.
 touch probe has a wire or clip that must be removed before the spindle rotates.
 
 - `M3` first checks `[touch_probe]`.
-- If the probe is triggered, disconnected, or miswired so it reports triggered,
-  `M3` forces the spindle output off and aborts.
+- If `[touch_probe]` exists and reports triggered, `M3` forces the spindle output
+  off and aborts.
+- Machines without `[touch_probe]` can still use the same spindle macros.
 - `M5` always turns the spindle output off.
 
 Place this guard in the Klipper macro layer, not only in KlipperScreen, so MDI,

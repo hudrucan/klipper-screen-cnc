@@ -10,7 +10,10 @@ This fork removes most 3D-printer-specific UI and replaces it with a compact CNC
 - MDI and G-code macro access
 - Spindle clockwise, counter-clockwise, and stop controls
 - Motion Override control using Klipper's native `M220`
+- Probe dashboard for touch probe, fixed tool setter, surface measure, and result history
+- CNC G-code file list with upload-date sorting and optional CAM thumbnails
 - CNC-oriented run status, progress, pause, resume, restart, and cancel
+- Optional `cnc-dark-red` theme for a darker CNC controller look
 - Limits, network, system, and shutdown controls
 
 ## Status
@@ -25,7 +28,10 @@ This project is under active development and currently targets our own Klipper C
 - Python 3.9 or newer
 - A configured touchscreen or mouse
 
-Spindle controls are shown when Klipper exposes the `M3` and `M5` commands and an `[output_pin spindle]` section. `M4` enables the counter-clockwise control.
+Spindle controls are shown when Klipper exposes the `M3` and `M5` commands and an
+`[output_pin spindle]` section. `M4` enables the counter-clockwise control.
+If a wired touch probe can be left attached near the spindle, use the guarded
+`M3` example in `config/examples/cnc_spindle.cfg`.
 
 ## Install
 
@@ -65,8 +71,9 @@ updates.
 
 See the quick [installation](docs/installation.md), [controls](docs/controls.md), and
 [migration](docs/migration.md) notes for configuration and troubleshooting.
-Optional Klipper-side examples for CNC pause/resume/cancel and parameter-aware homing
-are documented in [Example CNC Macros](docs/cnc-macros.md).
+Optional Klipper-side examples for guarded spindle start, CNC pause/resume/cancel,
+Fusion start/end hooks, touch-probe buttons, tool-setter workflows, and
+parameter-aware homing are documented in [Example CNC Macros](docs/cnc-macros.md).
 Experimental persistent WCS, XY stylus probing, and cutting-tool Z touch-off
 modules are documented in
 [Experimental Klipper CNC Extras](docs/klipper-extras.md).
