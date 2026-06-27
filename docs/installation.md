@@ -34,7 +34,7 @@ Moonraker or Klipper.
 ```sh
 git clone https://github.com/hudrucan/klipper-screen-cnc.git
 cd klipper-screen-cnc
-./scripts/KlipperScreen-install.sh
+./touch-ui/scripts/KlipperScreen-install.sh
 sudo systemctl restart klipper-screen
 ```
 
@@ -53,7 +53,7 @@ Runtime locations:
 ```sh
 cd ~/klipper-screen-cnc
 git pull --ff-only
-./scripts/KlipperScreen-update.sh
+./touch-ui/scripts/KlipperScreen-update.sh
 ```
 
 The update script refreshes the Python environment, copies bundled
@@ -64,13 +64,13 @@ service.
 If Klipper lives outside `~/klipper`, set `KLIPPER_PATH`:
 
 ```sh
-KLIPPER_PATH=/path/to/klipper ./scripts/KlipperScreen-update.sh
+KLIPPER_PATH=/path/to/klipper ./touch-ui/scripts/KlipperScreen-update.sh
 ```
 
 To skip installing the experimental Klipper extras:
 
 ```sh
-INSTALL_KLIPPER_EXTRAS=0 ./scripts/KlipperScreen-update.sh
+INSTALL_KLIPPER_EXTRAS=0 ./touch-ui/scripts/KlipperScreen-update.sh
 ```
 
 ## Moonraker update manager
@@ -84,7 +84,7 @@ type: git_repo
 path: ~/klipper-screen-cnc
 origin: https://github.com/hudrucan/klipper-screen-cnc.git
 primary_branch: master
-install_script: scripts/KlipperScreen-update.sh
+install_script: touch-ui/scripts/KlipperScreen-update.sh
 ```
 
 Use `klipper-screen` as the update manager component name even though the checkout
@@ -114,7 +114,7 @@ sudo systemctl restart klipper-screen
 ## Optional Moonraker CNC Integrations
 
 This repository also includes optional Moonraker-side CNC helpers in
-[`tools/moonraker`](../tools/moonraker/README.md):
+[`moonraker-extras/moonraker`](../moonraker-extras/moonraker/README.md):
 
 - `cnc_thumbnail.py` for top-down CNC toolpath thumbnails
 - `cnc_metadata.py` for `<file>.cnc-meta.json` sidecars
@@ -127,7 +127,7 @@ The upstream frontend/reference project for that compatibility layer is
 
 These are not required to run Klipper Screen CNC itself. Install them only if
 you want Moonraker-side CNC metadata processing or if you are experimenting
-with the vendored snapshot of the upstream E3CNC frontend.
+with the in-progress `web-ui/` app derived from the upstream E3CNC frontend.
 
 ## Verify
 

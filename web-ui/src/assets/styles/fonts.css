@@ -1,0 +1,25 @@
+@import url(https://db.onlinewebfonts.com/c/d7a74ed36ff0603a3e41b6da32c47f03?family=Ndot+57+Aligned);
+
+@font-face {
+    font-family: '0xProto Nerd Font Mono';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400;
+    src: url(/fonts/0xproto/0xProtoNerdFontMono-Regular.ttf) format('truetype');
+}
+
+@font-face {
+    font-family: '0xProto Nerd Font Mono';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 700;
+    src: url(/fonts/0xproto/0xProtoNerdFontMono-Bold.ttf) format('truetype');
+}
+
+@font-face {
+    font-family: '0xProto Nerd Font Mono';
+    font-style: italic;
+    font-display: swap;
+    font-weight: 400;
+    src: url(/fonts/0xproto/0xProtoNerdFontMono-Italic.ttf) format('truetype');
+}

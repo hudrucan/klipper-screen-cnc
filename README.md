@@ -1,8 +1,24 @@
-# Klipper Screen CNC
+# Klipper Screen CNC Monorepo
 
-A CNC-focused fork of [KlipperScreen](https://github.com/KlipperScreen/KlipperScreen), built for touchscreen control of Klipper-based CNC machines.
+A CNC-focused monorepo built around a fork of
+[KlipperScreen](https://github.com/KlipperScreen/KlipperScreen), plus related
+web UI, Moonraker, Klipper-extra, and tooling work.
 
-This fork removes most 3D-printer-specific UI and replaces it with a compact CNC workflow:
+## Workspace Layout
+
+- [`touch-ui/`](touch-ui) contains the touchscreen UI fork derived from
+  KlipperScreen.
+- [`web-ui/`](web-ui/README.md) contains the in-progress CNC web UI derived
+  from upstream [E3CNC](https://github.com/E3CNC/E3CNC).
+- [`klipper-extras/`](klipper-extras) contains experimental Klipper extras.
+- [`moonraker-extras/moonraker/`](moonraker-extras/moonraker/README.md)
+  contains optional Moonraker-side CNC integrations.
+- [`tools/`](tools) contains CAM/post-processor and related tooling.
+
+## Touch UI
+
+The `touch-ui/` app removes most 3D-printer-specific KlipperScreen UI and
+replaces it with a compact CNC workflow:
 
 - DRO with machine and work coordinates
 - Safer incremental jogging
@@ -34,7 +50,7 @@ This project is under active development and currently targets our own Klipper C
 Spindle controls are shown when Klipper exposes the `M3` and `M5` commands and an
 `[output_pin spindle]` section. `M4` enables the counter-clockwise control.
 If a wired touch probe can be left attached near the spindle, use the guarded
-`M3` example in `config/examples/cnc_spindle.cfg`. For normally-closed probes,
+`M3` example in `klipper-extras/macros/cnc_spindle.cfg`. For normally-closed probes,
 spindle start is allowed only after the probe wire is removed and the probe input
 reports triggered/open.
 
@@ -61,7 +77,7 @@ Keep the old config as a reference, then install the fork:
 ```bash
 git clone https://github.com/hudrucan/klipper-screen-cnc.git
 cd klipper-screen-cnc
-./scripts/KlipperScreen-install.sh
+./touch-ui/scripts/KlipperScreen-install.sh
 sudo systemctl restart klipper-screen
 ```
 
@@ -71,7 +87,7 @@ the Python virtual environment by default.
 For Mainsail/Fluidd updates, add the optional Moonraker
 `[update_manager klipper-screen]` block from
 [installation](docs/installation.md#moonraker-update-manager). The repo includes
-`scripts/KlipperScreen-update.sh` for non-interactive dependency and Klipper-extra
+`touch-ui/scripts/KlipperScreen-update.sh` for non-interactive dependency and Klipper-extra
 updates.
 
 Useful docs:
@@ -85,20 +101,20 @@ Useful docs:
   WCS, XY stylus probing, surface measurement, and cutting-tool Z touch-off.
 - [`tools/fusion360`](tools/fusion360/README.md) includes the adapted Fusion 360
   post processor.
-- [`tools/moonraker`](tools/moonraker/README.md) includes optional Moonraker-side
+- [`moonraker-extras/moonraker`](moonraker-extras/moonraker/README.md) includes optional Moonraker-side
   CNC integrations:
   thumbnails, metadata sidecars, a minimal `cnc_agent`, and machine-profile
   examples.
 
 ## E3CNC Frontend Status
 
-This repository also vendors a debloated snapshot of the upstream E3CNC frontend under
-`vendor/e3cnc-debloated/frontend`.
-The upstream project is [E3CNC](https://github.com/E3CNC/E3CNC).
+This repository also contains an in-progress web UI app under [`web-ui/`](web-ui/README.md),
+derived from the upstream [E3CNC](https://github.com/E3CNC/E3CNC) frontend.
 
 Current status:
 
-- the frontend snapshot is kept as a reference/customization base
+- the frontend has been moved out of `vendor/` and is now being debloated as a
+  first-class app
 - E3CNC update, rollback, and release-management UI dependencies were removed
 - Moonraker-side compatibility work in this repo currently targets:
   metadata sidecars and `/server/cnc/*`

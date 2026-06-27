@@ -28,7 +28,7 @@ Use it with:
 [include cnc_homing_override.cfg]
 ```
 
-from `config/examples/`.
+from `klipper-extras/macros/`.
 
 ## Differences from upstream
 
@@ -43,4 +43,4 @@ from `config/examples/`.
 The original MIT license is included in `LICENSE.mpcnc-post-processor`.
 
 For automatic top-down toolpath previews in KlipperScreen, see the
-[Moonraker CNC thumbnail processor](../moonraker/README.md).
+[Moonraker CNC thumbnail processor](../../moonraker-extras/moonraker/README.md).

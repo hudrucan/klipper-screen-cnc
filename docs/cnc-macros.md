@@ -2,12 +2,12 @@
 
 The repository includes optional Klipper configuration examples:
 
-- [`cnc_pause_resume.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_pause_resume.cfg)
-- [`cnc_spindle.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_spindle.cfg)
-- [`cnc_start_end.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_start_end.cfg)
-- [`cnc_homing_override.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_homing_override.cfg)
-- [`cnc_touch_probe.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_touch_probe.cfg)
-- [`cnc_tool_setter.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/config/examples/cnc_tool_setter.cfg)
+- [`cnc_pause_resume.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_pause_resume.cfg)
+- [`cnc_spindle.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_spindle.cfg)
+- [`cnc_start_end.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_start_end.cfg)
+- [`cnc_homing_override.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_homing_override.cfg)
+- [`cnc_touch_probe.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_touch_probe.cfg)
+- [`cnc_tool_setter.cfg`](https://github.com/hudrucan/klipper-screen-cnc/blob/master/klipper-extras/macros/cnc_tool_setter.cfg)
 
 Copy the required files into `~/printer_data/config/`, review every machine-specific
 value, then include them from `printer.cfg`:

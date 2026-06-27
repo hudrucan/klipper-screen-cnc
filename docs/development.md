@@ -13,5 +13,5 @@ For now, the important runtime names are:
 Install dependencies with:
 
 ```sh
-pip install -r scripts/KlipperScreen-requirements.txt
+pip install -r touch-ui/scripts/KlipperScreen-requirements.txt
 ```

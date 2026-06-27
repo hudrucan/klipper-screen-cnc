@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "esnext",
+        "strict": true,
+        "jsx": "preserve",
+        "importHelpers": true,
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "types": ["vite/client", "vitest/globals"],
+        "paths": {
+            "@/*": ["./src/*"]
+        },
+        "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
+    },
+    "include": [
+        "vite.config.ts",
+        "src/types/*.d.ts",
+        "components.d.ts",
+        "src/main.ts",
+        "src/*/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "node_modules/vite-plugin-pwa/client.d.ts"
+    ],
+    "exclude": ["node_modules"]
+}

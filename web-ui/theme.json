@@ -1,0 +1,11 @@
+{
+  "name": "e3-cnc",
+  "displayName": "Ender 3 CNC",
+  "colorLogo": "#00FF00",
+  "colorPrimary": "#00FF00",
+  "logo": {
+    "show": true,
+    "light": false,
+    "sidebar": "/img/themes/sidebarLogo-e3cnc.svg"
+  }
+}

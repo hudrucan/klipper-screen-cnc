@@ -1,0 +1,18 @@
+.v-toast__item--error {
+    background-color: rgb(var(--v-theme-error)) !important;
+}
+
+.v-toast__item--success {
+    background-color: rgb(var(--v-theme-success)) !important;
+}
+
+.v-toast__item--warning {
+    background-color: rgb(var(--v-theme-warning)) !important;
+}
+
+.v-toast__text {
+}
+
+.fullscreenUpload--active .v-toast--bottom {
+    bottom: 88px;
+}

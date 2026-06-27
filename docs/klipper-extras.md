@@ -34,7 +34,7 @@ On installations where Klipper lives elsewhere, copy them into that
 installation's `klippy/extras/` directory. Restart Klipper after adding or
 updating either file.
 
-`scripts/KlipperScreen-update.sh` also tries to copy these modules automatically.
+`touch-ui/scripts/KlipperScreen-update.sh` also tries to copy these modules automatically.
 It checks `~/klipper/klippy/extras/`, `~/Klipper/klippy/extras/`,
 `~/printer_data/klipper/klippy/extras/`, and common `/home/*/klipper` paths.
 

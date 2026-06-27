@@ -22,7 +22,7 @@ thumbnails on mixed-use Klipper installations.
 The adapted Fusion post processor writes a `Stock Box` table into the G-code.
 Other CAM output can still be rendered using its detected motion envelope.
 
-See [`tools/moonraker`](../tools/moonraker/README.md) for installation,
+See [`moonraker-extras/moonraker`](../moonraker-extras/moonraker/README.md) for installation,
 manual preview commands, metadata sidecars, `cnc_agent`, and machine-profile
 setup.
 
